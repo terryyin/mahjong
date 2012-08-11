@@ -100,6 +100,10 @@ SOURCE=.\AllTests.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\CheatSheetTest.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\CommandLineArgumentsTest.cpp
 # End Source File
 # Begin Source File
@@ -109,14 +113,6 @@ SOURCE=.\CommandLineTestRunnerTest.cpp
 # Begin Source File
 
 SOURCE=.\JUnitOutputTest.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\CppUTest\MemoryLeakAllocator.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\MemoryLeakAllocatorTest.cpp
 # End Source File
 # Begin Source File
 
@@ -140,6 +136,10 @@ SOURCE=.\PluginTest.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\PreprocessorTest.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\SetPluginTest.cpp
 # End Source File
 # Begin Source File
@@ -152,11 +152,23 @@ SOURCE=.\TestFailureTest.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TestFilterTest.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\TestHarness_cTest.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TestHarness_cTestCFile.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\TestInstallerTest.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\TestMemoryAllocatorTest.cpp
 # End Source File
 # Begin Source File
 
@@ -180,15 +192,15 @@ SOURCE=.\UtestTest.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
+SOURCE=.\AllocationInCFile.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\AllocationInCppFile.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\AllTests.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\Extensions\AllTests.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\include\Platforms\VisualCpp\stdint.h
 # End Source File
 # End Group
 # Begin Group "Resource Files"

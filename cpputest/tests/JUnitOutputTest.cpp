@@ -72,7 +72,7 @@ TEST_GROUP(JUnitOutputTest)
 			{
 			}
 			;
-			Utest* tst_;
+			UtestShell* tst_;
 			SimpleString* testName_;
 			TestFailure* failure_;
 		};
@@ -85,8 +85,8 @@ TEST_GROUP(JUnitOutputTest)
 			}
 			;
 
-			int numberTests_;
-			int totalFailures_;
+			size_t numberTests_;
+			size_t totalFailures_;
 			SimpleString name_;
 
 			TestData* testData_;
@@ -121,8 +121,8 @@ TEST_GROUP(JUnitOutputTest)
 
 		virtual ~MockJUnitTestOutput()
 		{
-			for (int i = 0; i < testGroupSize; i++) {
-				for (int j = 0; j < testGroupData_[i].numberTests_; j++) {
+			for (size_t i = 0; i < testGroupSize; i++) {
+				for (size_t j = 0; j < testGroupData_[i].numberTests_; j++) {
 					delete testGroupData_[i].testData_[j].tst_;
 					delete testGroupData_[i].testData_[j].testName_;
 					if (testGroupData_[i].testData_[j].failure_) delete testGroupData_[i].testData_[j].failure_;
@@ -152,17 +152,17 @@ TEST_GROUP(JUnitOutputTest)
 			fileBalance--;
 		}
 
-		void createTestsInGroup(int index, int amount, const char* group, const char* basename)
+		void createTestsInGroup(int index, size_t amount, const char* group, const char* basename)
 		{
 			testGroupData_[index].name_ = group;
 			testGroupData_[index].numberTests_ = amount;
 
 			testGroupData_[index].testData_ = new TestData[amount];
-			for (int i = 0; i < amount; i++) {
+			for (size_t i = 0; i < amount; i++) {
 				TestData& testData = testGroupData_[index].testData_[i];
 				testData.testName_ = new SimpleString(basename);
 				*testData.testName_ += StringFrom((long) i);
-				testData.tst_ = new Utest(group, testData.testName_->asCharString(), "file", 1);
+				testData.tst_ = new UtestShell(group, testData.testName_->asCharString(), "file", 1);
 			}
 		}
 		void runTests()
@@ -174,7 +174,7 @@ TEST_GROUP(JUnitOutputTest)
 
 				millisTime = 0;
 				res_->currentGroupStarted(data.testData_[0].tst_);
-				for (int j = 0; j < data.numberTests_; j++) {
+				for (size_t j = 0; j < data.numberTests_; j++) {
 					TestData& testData = data.testData_[j];
 
 					millisTime = 0;
@@ -201,12 +201,12 @@ TEST_GROUP(JUnitOutputTest)
 			STRCMP_EQUAL("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n", string.asCharString());
 		}
 
-		void CHECK_TEST_SUITE_START(SimpleString output)
+		void CHECK_TEST_SUITE_START(SimpleString out)
 		{
 			TestGroupData& group = currentGroup();
 			SimpleString buf = StringFromFormat("<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" tests=\"%d\" time=\"0.050\" timestamp=\"%s\">\n", group.totalFailures_,
 					group.name_.asCharString(), group.numberTests_, theTime);
-			CHECK_EQUAL(buf, output);
+			CHECK_EQUAL(buf, out);
 		}
 
 		void CHECK_XML_FILE()
@@ -225,33 +225,34 @@ TEST_GROUP(JUnitOutputTest)
 			CHECK_TEST_SUITE_END(col[col.size() - 1]);
 		}
 
-		void CHECK_PROPERTIES_START(const SimpleString& output)
+		void CHECK_PROPERTIES_START(const SimpleString& out)
 		{
-			STRCMP_EQUAL("<properties>\n", output.asCharString());
+			STRCMP_EQUAL("<properties>\n", out.asCharString());
 		}
 
-		void CHECK_PROPERTIES_END(const SimpleString& output)
+		void CHECK_PROPERTIES_END(const SimpleString& out)
 		{
-			STRCMP_EQUAL("</properties>\n", output.asCharString());
+			STRCMP_EQUAL("</properties>\n", out.asCharString());
 		}
 
-		void CHECK_SYSTEM_OUT(const SimpleString& output)
+		void CHECK_SYSTEM_OUT(const SimpleString& out)
 		{
-			STRCMP_EQUAL("<system-out></system-out>\n", output.asCharString());
+			STRCMP_EQUAL("<system-out></system-out>\n", out.asCharString());
 		}
 
-		void CHECK_SYSTEM_ERR(const SimpleString& output)
+		void CHECK_SYSTEM_ERR(const SimpleString& out)
 		{
-			STRCMP_EQUAL("<system-err></system-err>\n", output.asCharString());
+			STRCMP_EQUAL("<system-err></system-err>\n", out.asCharString());
 		}
 
-		void CHECK_TEST_SUITE_END(const SimpleString& output)
+		void CHECK_TEST_SUITE_END(const SimpleString& out)
 		{
-			STRCMP_EQUAL("</testsuite>", output.asCharString());
+			STRCMP_EQUAL("</testsuite>", out.asCharString());
 		}
+
 		void CHECK_TESTS(SimpleString* arr)
 		{
-			for (int index = 0, curTest = 0; curTest < currentGroup().numberTests_; curTest++, index++) {
+			for (size_t index = 0, curTest = 0; curTest < currentGroup().numberTests_; curTest++, index++) {
 				SimpleString buf = StringFromFormat("<testcase classname=\"%s\" name=\"%s\" time=\"0.010\">\n", currentGroup().name_.asCharString(),
 						currentGroup().testData_[curTest].tst_->getName().asCharString());
 				CHECK_EQUAL(buf, arr[index]);
@@ -263,7 +264,7 @@ TEST_GROUP(JUnitOutputTest)
 
 			}
 		}
-		void CHECK_FAILURE(SimpleString* arr, int& i, int curTest)
+		void CHECK_FAILURE(SimpleString* arr, size_t& i, size_t curTest)
 		{
 			TestFailure& f = *currentGroup().testData_[curTest].failure_;
 			i++;
@@ -364,3 +365,15 @@ TEST(JUnitOutputTest, messageWithNewLine)
 	output->setFailure(0, 0, "file", 1, "Test \n failed");
 	runTests();
 }
+
+TEST(JUnitOutputTest, createNormalFilename)
+{
+	STRCMP_EQUAL("cpputest_group.xml", output->createFileName("group").asCharString());
+}
+
+TEST(JUnitOutputTest, escapeSlashesInFilenames)
+{
+	STRCMP_EQUAL("cpputest_group_weird_name.xml", output->createFileName("group/weird/name").asCharString());
+}
+
+

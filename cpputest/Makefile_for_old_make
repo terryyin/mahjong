@@ -33,6 +33,20 @@ ifndef CPPUTEST_LIB_DIR
     CPPUTEST_LIB_DIR = lib
 endif
 
+# Use the real gtest or use the fake simulation
+ifdef CPPUTEST_USE_REAL_GTEST
+	CPPUTEST_USE_REAL_GTEST = Y
+else
+	CPPUTEST_USE_REAL_GTEST = N
+endif
+
+# Use gmock
+ifdef CPPUTEST_USE_REAL_GMOCK
+	CPPUTEST_USE_REAL_GMOCK = Y
+else
+	CPPUTEST_USE_REAL_GMOCK = N
+endif
+
 # --------------------------------------
 # derived flags in the following area
 # --------------------------------------
@@ -51,6 +65,31 @@ ifeq ($(CPPUTEST_ENABLE_DEBUG), Y)
 	CPPUTEST_CPPFLAGS += -g
 endif
 
+ifeq ($(CPPUTEST_USE_REAL_GMOCK), Y)
+	ifndef GMOCK_HOME
+$(error CPPUTEST_USE_REAL_GMOCK defined, but GMOCK_HOME not, so can't use real gmock! Please define GMOCK_HOME to the gmock location)
+	endif
+	GTEST_HOME = $(GMOCK_HOME)/gtest
+	CPPUTEST_USE_REAL_GTEST = Y
+	CPPUTEST_CPPFLAGS += -I$(GMOCK_HOME)/include
+	GMOCK_LIBRARY = $(GMOCK_HOME)/lib/.libs/libgmock.a
+	LD_LIBRARIES += $(GMOCK_LIBRARY)
+	CPPUTEST_CPPFLAGS += -DCPPUTEST_USE_REAL_GMOCK
+else
+	CPPUTEST_CPPFLAGS += -Iinclude/CppUTestExt/CppUTestGMock
+endif
+
+ifeq ($(CPPUTEST_USE_REAL_GTEST), Y)
+	ifndef GTEST_HOME
+$(error CPPUTEST_USE_REAL_GTEST defined, but GTEST_HOME not, so can't use real gtest! Please define GTEST_HOME to the gtest location)
+	endif
+	CPPUTEST_CPPFLAGS += -I$(GTEST_HOME)/include
+	LD_LIBRARIES += $(GTEST_HOME)/lib/.libs/libgtest.a
+	CPPUTEST_CPPFLAGS += -DCPPUTEST_USE_REAL_GTEST
+else
+	CPPUTEST_CPPFLAGS += -Iinclude/CppUTestExt/CppUTestGTest
+endif
+
 ifeq ($(CPPUTEST_USE_STD_CPP_LIB), N)
 	CPPUTEST_CPPFLAGS += -DCPPUTEST_STD_CPP_LIB_DISABLED
 	CPPUTEST_CXXFLAGS += -nostdinc++
@@ -65,12 +104,13 @@ CPPUTEST_CPPFLAGS +=  $(INCLUDES)
 
 CPPUTEST_CPPFLAGS += $(CPPUTEST_WARNINGFLAGS)
 CPPUTEST_CXXFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_NEW_MACRO_FILE)
+CPPUTEST_CXXFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_MALLOC_MACRO_FILE)
 CPPUTEST_CFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_MALLOC_MACRO_FILE)
 
 CPPUTEST_LIB = $(CPPUTEST_HOME)/lib/libCppUTest.a 
 CPPUTEST_EXT_LIB += $(CPPUTEST_HOME)/lib/libCppUTestExt.a
 
-LD_LIBRARIES += -lstdc++ -lgcov
+LD_LIBRARIES += -lstdc++
 
 CPPUTEST_SRC_DIRS = src/CppUTest src/Platforms/Gcc
 CPPUTEST_EXT_SRC_DIRS = src/CppUTestExt 
@@ -137,7 +177,7 @@ $(CPPUTEST_CPP_OBJS): %.o: %.cpp
 $(CPPUTEST_C_OBJS): %.o: %.c
 	@echo compiling $(notdir $<)
 	$(SILENCE)mkdir -p $(dir $@)
-	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MT "$@ $(subst .o,.d,$@)" $<
 	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -c $(OUTPUT_OPTION) $<
 
 $(CPPUTEST_TEST_CPP_OBJS): %.o: %.cpp
@@ -149,7 +189,7 @@ $(CPPUTEST_TEST_CPP_OBJS): %.o: %.cpp
 $(CPPUTEST_TEST_C_OBJS): %.o: %.c
 	@echo compiling $(notdir $<)
 	$(SILENCE)mkdir -p $(dir $@)
-	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MT "$@ $(subst .o,.d,$@)" $<
 	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -c $(OUTPUT_OPTION) $<
 
 extensions: $(CPPUTEST_EXT_TEST_TARGET)
@@ -173,7 +213,7 @@ $(CPPUTEST_EXT_CPP_OBJS): %.o: %.cpp
 $(CPPUTEST_EXT_C_OBJS): %.o: %.c
 	@echo compiling $(notdir $<)
 	$(SILENCE)mkdir -p $(dir $@)
-	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MT "$@ $(subst .o,.d,$@)" $<
 	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -c $(OUTPUT_OPTION) $<
 
 $(CPPUTEST_EXT_TEST_CPP_OBJS): %.o: %.cpp
@@ -185,7 +225,7 @@ $(CPPUTEST_EXT_TEST_CPP_OBJS): %.o: %.cpp
 $(CPPUTEST_EXT_TEST_C_OBJS): %.o: %.c
 	@echo compiling $(notdir $<)
 	$(SILENCE)mkdir -p $(dir $@)
-	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MT "$@ $(subst .o,.d,$@)" $<
 	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -c $(OUTPUT_OPTION) $<
 
 ############ Clean targets ##################

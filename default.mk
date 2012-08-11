@@ -69,13 +69,13 @@ ALL_CXXFLAGS := $(ALL_INCLUDE) $(COMPONENT_CXXFLAGS)
 $(OBJ_ROOT)/%.obj: $(COMPONENT_ROOT)/%.cpp
 	@echo compiling $<
 	@mkdir -p $(dir $@)
-	@$(CC) $(ALL_CXXFLAGS) -M -MF $(subst .obj,.d,$@) -MT "$@ $(subst .obj,.d,$@)" $<
+	$(CC) $(ALL_CXXFLAGS) -M -MT "$@ $(subst .obj,.d,$@)" $<
 	@$(COMPILE.cpp) $(ALL_CXXFLAGS) $(OUTPUT_OPTION) $<
 
 $(OBJ_ROOT)/%.obj: $(COMPONENT_ROOT)/%.c
 	@echo compiling $<
 	@mkdir -p $(dir $@)
-	@$(CC) $(ALL_CFLAGS) -M -MF $(subst .obj,.d,$@) -MT "$@ $(subst .obj,.d,$@)" $<
+	@$(CC) $(ALL_CFLAGS) -M -MT "$@ $(subst .obj,.d,$@)" $<
 	@$(COMPILE.c) $(ALL_CFLAGS) $(OUTPUT_OPTION) $<	
 
 $(COMPONENT_SRC_LIB): $(ALL_SRC_OBJS)

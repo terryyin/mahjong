@@ -38,11 +38,10 @@
 #ifndef D_SimpleString_h
 #define D_SimpleString_h
 
-#include <stdarg.h>
-#include <stddef.h>
+#include "StandardCLibrary.h"
 
 class SimpleStringCollection;
-class MemoryLeakAllocator;
+class TestMemoryAllocator;
 
 class SimpleString
 {
@@ -60,6 +59,9 @@ public:
 	SimpleString& operator+=(const SimpleString&);
 	SimpleString& operator+=(const char*);
 
+	char at(int pos) const;
+	int find(char ch) const;
+	int findFrom(size_t starting_position, char ch) const;
 	bool contains(const SimpleString& other) const;
 	bool containsNoCase(const SimpleString& other) const;
 	bool startsWith(const SimpleString& other) const;
@@ -75,6 +77,7 @@ public:
 
 	SimpleString toLower() const;
 	SimpleString subString(size_t beginPos, size_t amount) const;
+	SimpleString subStringFromTill(char startChar, char lastExcludedChar) const;
 	void copyToBuffer(char* buffer, size_t bufferSize) const;
 
 	const char *asCharString() const;
@@ -83,15 +86,15 @@ public:
 
 	static void padStringsToSameLength(SimpleString& str1, SimpleString& str2, char ch);
 
-	static MemoryLeakAllocator* getStringAllocator();
-	static void setStringAllocator(MemoryLeakAllocator* allocator);
+	static TestMemoryAllocator* getStringAllocator();
+	static void setStringAllocator(TestMemoryAllocator* allocator);
 
 	static char* allocStringBuffer(size_t size);
 	static void deallocStringBuffer(char* str);
 private:
 	char *buffer_;
 
-	static MemoryLeakAllocator* stringAllocator_;
+	static TestMemoryAllocator* stringAllocator_;
 
 	char* getEmptyString() const;
 };
@@ -131,12 +134,7 @@ SimpleString VStringFromFormat(const char* format, va_list args);
 
 #if CPPUTEST_USE_STD_CPP_LIB
 
-#undef new
 #include <string>
-#if CPPUTEST_USE_NEW_MACROS
-#include "CppUTest/MemoryLeakDetectorNewMacros.h"
-#endif
-
 #include <stdint.h>
 
 SimpleString StringFrom(const std::string& other);

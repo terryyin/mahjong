@@ -36,30 +36,35 @@
 #include <stdlib.h>
 #include "CppUTest/PlatformSpecificFunctions.h"
 
-void Utest::executePlatformSpecificTestBody()
+static jmp_buf test_exit_jmp_buf[10];
+static int jmp_buf_index = 0;
+
+int PlatformSpecificSetJmp(void (*function) (void* data), void* data)
 {
-	TInt err(KErrNone);
-	TRAP(err, testBody());
-	if(err != KErrNone) {
-		Utest::getCurrent()->fail("Leave in test method", "", 0);
+	if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
+	    jmp_buf_index++;
+		function(data);
+	    jmp_buf_index--;
+		return 1;
 	}
+	return 0;
 }
 
-void Utest::executePlatformSpecificExitCurrentTest() {
-	User::Leave(KErrNone);
+void PlatformSpecificLongJmp()
+{
+	jmp_buf_index--;
+	longjmp(test_exit_jmp_buf[jmp_buf_index], 1);
 }
 
-bool Utest::executePlatformSpecificSetup() {
-	setup();
-	return true;
+void PlatformSpecificRestoreJumpBuffer()
+{
+	jmp_buf_index--;
 }
 
-void Utest::executePlatformSpecificRunOneTest(TestPlugin* plugin, TestResult& result) {
-	runOneTest(plugin, result);
-}
-
-void Utest::executePlatformSpecificTeardown() {
-	teardown();
+void PlatformSpecificRunTestInASeperateProcess(UtestShell* shell, TestPlugin* plugin, TestResult* result)
+{
+   printf("-p doesn't work on this platform as it is not implemented. Running inside the process\b");
+   shell->runOneTest(plugin, *result);
 }
 
 static long TimeInMillisImplementation() {
@@ -79,6 +84,11 @@ void SetPlatformSpecificTimeInMillisMethod(long (*platformSpecific) ()) {
 	timeInMillisFp = (platformSpecific == 0) ? TimeInMillisImplementation : platformSpecific;
 }
 
+TestOutput::WorkingEnvironment PlatformSpecificGetWorkingEnvironment()
+{
+	return TestOutput::eclipse;
+}
+
 ///////////// Time in String
 
 static SimpleString TimeStringImplementation() {
@@ -96,7 +106,7 @@ void SetPlatformSpecificTimeStringMethod(SimpleString (*platformMethod) ()) {
 	timeStringFp = (platformMethod == 0) ? TimeStringImplementation : platformMethod;
 }
 
-int PlatformSpecificVSNprintf(char* str, unsigned int size, const char* format, va_list args) {
+int PlatformSpecificVSNprintf(char* str, size_t size, const char* format, va_list args) {
     return vsnprintf(str, size, format, args);
 }
 

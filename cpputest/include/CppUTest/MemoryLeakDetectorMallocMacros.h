@@ -15,6 +15,7 @@
  * TestHarness.h is only included in test code.
  */
 
+
 #ifndef CPPUTEST_USE_MEM_LEAK_DETECTION
 #ifdef CPPUTEST_MEM_LEAK_DETECTION_DISABLED
 #define CPPUTEST_USE_MEM_LEAK_DETECTION 0
@@ -28,12 +29,24 @@
 /* This prevents the declaration from done twice and makes sure the file only #defines malloc, so it can be included anywhere */
 #ifndef CPPUTEST_USE_MALLOC_MACROS
 
-#include <stdlib.h>
+#include "StandardCLibrary.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 extern void* cpputest_malloc_location(size_t size, const char* file, int line);
 extern void* cpputest_calloc_location(size_t count, size_t size, const char* file, int line);
-extern void* cpputest_ralloc_location(void *, size_t, const char* file, int line);
+extern void* cpputest_realloc_location(void *, size_t, const char* file, int line);
 extern void cpputest_free_location(void* buffer, const char* file, int line);
+
+#ifdef __cplusplus
+}
+#endif
+
+extern void crash_on_allocation_number(unsigned number);
+
 
 #endif
 

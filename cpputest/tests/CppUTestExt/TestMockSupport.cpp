@@ -47,6 +47,7 @@ TEST_GROUP(MockSupportTest)
 		CHECK_NO_MOCK_FAILURE();
 		expectationsList->deleteAllExpectationsAndClearList();
 		delete expectationsList;
+		mock().setMockFailureReporter(NULL);
 	}
 
 	MockExpectedFunctionCall* addFunctionToExpectationsList(const SimpleString& name)
@@ -55,9 +56,17 @@ TEST_GROUP(MockSupportTest)
 		newCall->withName(name);
 		expectationsList->addExpectedCall(newCall);
 		return newCall;
-
-		mock().setMockFailureReporter(NULL);
 	}
+
+	MockExpectedFunctionCall* addFunctionToExpectationsList(const SimpleString& name, int order)
+	{
+		MockExpectedFunctionCall* newCall = new MockExpectedFunctionCall;
+		newCall->withName(name);
+		newCall->withCallOrder(order);
+		expectationsList->addExpectedCall(newCall);
+		return newCall;
+	}
+
 };
 
 TEST(MockSupportTest, clear)
@@ -126,7 +135,7 @@ TEST(MockSupportTest, ignoreOtherCallsDoesntIgnoreMultipleCallsOfTheSameFunction
 	mock().actualCall("foo");
 	mock().actualCall("foo");
 
-	addFunctionToExpectationsList("foo")->callWasMade();
+	addFunctionToExpectationsList("foo")->callWasMade(1);
 	MockUnexpectedCallHappenedFailure expectedFailure(mockFailureTest(), "foo", *expectationsList);
 	CHECK_EXPECTED_MOCK_FAILURE(expectedFailure);
 }
@@ -153,10 +162,97 @@ TEST(MockSupportTest, expectMultipleCallsThatHappen)
 	CHECK_NO_MOCK_FAILURE();
 }
 
+TEST(MockSupportTest, strictOrderObserved)
+{
+	mock().strictOrder();
+	mock().expectOneCall("foo1");
+	mock().expectOneCall("foo2");
+	mock().actualCall("foo1");
+	mock().actualCall("foo2");
+	mock().checkExpectations();
+	CHECK_NO_MOCK_FAILURE();
+}
+
+TEST(MockSupportTest, someStrictOrderObserved)
+{
+	mock().expectOneCall("foo3").withCallOrder(3);
+	mock().expectOneCall("foo1");
+	mock().expectOneCall("foo2");
+	mock().actualCall("foo2");
+	mock().actualCall("foo1");
+	mock().actualCall("foo3");
+	mock().checkExpectations();
+	CHECK_NO_MOCK_FAILURE();
+}
+
+TEST(MockSupportTest, strictOrderViolated)
+{
+	mock().strictOrder();
+	addFunctionToExpectationsList("foo1", 1)->callWasMade(1);
+	addFunctionToExpectationsList("foo1", 2)->callWasMade(3);
+	addFunctionToExpectationsList("foo2", 3)->callWasMade(2);
+	MockCallOrderFailure expectedFailure(mockFailureTest(), *expectationsList);
+	mock().expectOneCall("foo1");
+	mock().expectOneCall("foo1");
+	mock().expectOneCall("foo2");
+	mock().actualCall("foo1");
+	mock().actualCall("foo2");
+	mock().actualCall("foo1");
+	mock().checkExpectations();
+	CHECK_EXPECTED_MOCK_FAILURE(expectedFailure);
+}
+
+TEST(MockSupportTest, strictOrderNotViolatedWithTwoMocks)
+{
+	mock("mock1").strictOrder();
+	mock("mock2").strictOrder();
+	mock("mock1").expectOneCall("foo1");
+	mock("mock2").expectOneCall("foo2");
+
+	mock("mock1").actualCall("foo1");
+	mock("mock2").actualCall("foo2");
+
+	mock("mock1").checkExpectations();
+	mock("mock2").checkExpectations();
+	CHECK_NO_MOCK_FAILURE();
+}
+
+IGNORE_TEST(MockSupportTest, strictOrderViolatedWithTwoMocks)
+{
+	//this test and scenario needs a decent failure message.
+	mock("mock1").strictOrder();
+	mock("mock2").strictOrder();
+	mock("mock1").expectOneCall("foo1");
+	mock("mock2").expectOneCall("foo2");
+
+	mock("mock2").actualCall("foo2");
+	mock("mock1").actualCall("foo1");
+
+	mock("mock1").checkExpectations();
+	mock("mock2").checkExpectations();
+	CHECK_NO_MOCK_FAILURE();
+}
+
+TEST(MockSupportTest, usingNCalls)
+{
+	mock().strictOrder();
+	mock().expectOneCall("foo1");
+	mock().expectNCalls(2, "foo2");
+	mock().expectOneCall("foo1");
+
+	mock().actualCall("foo1");
+	mock().actualCall("foo2");
+	mock().actualCall("foo2");
+	mock().actualCall("foo1");
+
+	mock().checkExpectations();
+	CHECK_NO_MOCK_FAILURE();
+}
+
 TEST(MockSupportTest, expectOneCallHoweverMultipleHappened)
 {
-	addFunctionToExpectationsList("foo")->callWasMade();
-	addFunctionToExpectationsList("foo")->callWasMade();
+	addFunctionToExpectationsList("foo")->callWasMade(1);
+	addFunctionToExpectationsList("foo")->callWasMade(2);
 	MockUnexpectedCallHappenedFailure expectedFailure(mockFailureTest(), "foo", *expectationsList);
 
 	mock().expectOneCall("foo");
@@ -335,6 +431,23 @@ TEST(MockSupportTest, ignoreOtherParametersMultipleCalls)
 	CHECK_NO_MOCK_FAILURE();
 }
 
+TEST(MockSupportTest, ignoreOtherParametersMultipleCallsButOneDidntHappen)
+{
+	MockExpectedFunctionCall* call = addFunctionToExpectationsList("boo");
+	call->ignoreOtherParameters();
+	call->callWasMade(1);
+	call->parametersWereIgnored();
+	call->ignoreOtherParameters();
+	addFunctionToExpectationsList("boo")->ignoreOtherParameters();
+	mock().expectOneCall("boo").ignoreOtherParameters();
+	mock().expectOneCall("boo").ignoreOtherParameters();
+	mock().actualCall("boo");
+	mock().checkExpectations();
+	MockExpectedCallsDidntHappenFailure expectedFailure(mockFailureTest(), *expectationsList);
+	CHECK_EXPECTED_MOCK_FAILURE(expectedFailure);
+}
+
+
 TEST(MockSupportTest, newCallStartsWhileNotAllParametersWerePassed)
 {
 	addFunctionToExpectationsList("foo")->withParameter("p1", 1);
@@ -448,6 +561,14 @@ TEST(MockSupportTest, hasDataBeenSet)
 	CHECK(!mock().hasData("data"));
 	mock().setData("data", 10);
 	CHECK(mock().hasData("data"));
+}
+
+TEST(MockSupportTest, dataCanBeChanged)
+{
+	mock().setData("data", 10);
+	mock().setData("data", 15);
+	LONGS_EQUAL(15, mock().getData("data").getIntValue());
+
 }
 
 TEST(MockSupportTest, uninitializedData)
@@ -785,6 +906,15 @@ TEST(MockSupportTest, expectMultipleMultipleCallsWithParameters)
 	CHECK_NO_MOCK_FAILURE();
 }
 
+TEST(MockSupportTest, whenCallingDisabledOrIgnoredActualCallsThenTheyDontReturnPreviousCallsValues)
+{
+	mock().expectOneCall("boo").ignoreOtherParameters().andReturnValue(10);
+	mock().ignoreOtherCalls();
+	mock().actualCall("boo");
+	mock().actualCall("An Ignored Call");
+	CHECK(!mock().hasReturnValue());
+}
+
 TEST(MockSupportTest, tracing)
 {
 	mock().tracing(true);
@@ -795,4 +925,24 @@ TEST(MockSupportTest, tracing)
 
 	STRCMP_CONTAINS("boo", mock().getTraceOutput());
 	STRCMP_CONTAINS("foo", mock().getTraceOutput());
+}
+
+TEST(MockSupportTest, shouldntFailTwice)
+{
+	mock().expectOneCall("foo");
+	mock().actualCall("bar");
+	mock().checkExpectations();
+	LONGS_EQUAL(1, MockFailureReporterForTest::getReporter()->getAmountOfTestFailures());
+	CLEAR_MOCK_FAILURE();
+}
+
+
+IGNORE_TEST(MockSupportTest, testForPerformanceProfiling)
+{
+	/* TO fix! */
+	mock().expectNCalls(1000, "SimpleFunction");
+	for (int i = 0; i < 1000; i++) {
+		mock().actualCall("SimpleFunction");
+	}
+
 }

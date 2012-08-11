@@ -28,19 +28,19 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/SimpleString.h"
 #include "CppUTest/PlatformSpecificFunctions.h"
-#include "CppUTest/MemoryLeakAllocator.h"
+#include "CppUTest/TestMemoryAllocator.h"
 
 
-MemoryLeakAllocator* SimpleString::stringAllocator_ = NULL;
+TestMemoryAllocator* SimpleString::stringAllocator_ = NULL;
 
-MemoryLeakAllocator* SimpleString::getStringAllocator()
+TestMemoryAllocator* SimpleString::getStringAllocator()
 {
 	if (stringAllocator_ == NULL)
-		return StandardNewArrayAllocator::defaultAllocator();
+		return defaultNewArrayAllocator();
 	return stringAllocator_;
 }
 
-void SimpleString::setStringAllocator(MemoryLeakAllocator* allocator)
+void SimpleString::setStringAllocator(TestMemoryAllocator* allocator)
 {
 	stringAllocator_ = allocator;
 }
@@ -158,7 +158,7 @@ void SimpleString::split(const SimpleString& delimiter, SimpleStringCollection& 
 	for (size_t i = 0; i < num; ++i) {
 		prev = str;
 		str = PlatformSpecificStrStr(str, delimiter.buffer_) + 1;
-		size_t len = str - prev;
+		size_t len = (size_t) (str - prev);
 		char* sub = allocStringBuffer(len + 1);
 		PlatformSpecificStrNCpy(sub, prev, len);
 		sub[len] = '\0';
@@ -308,6 +308,36 @@ SimpleString SimpleString::subString(size_t beginPos, size_t amount) const
 	return newString;
 }
 
+char SimpleString::at(int pos) const
+{
+	return buffer_[pos];
+}
+
+int SimpleString::find(char ch) const
+{
+	return findFrom(0, ch);
+}
+
+int SimpleString::findFrom(size_t starting_position, char ch) const
+{
+	size_t length = size();
+	for (size_t i = starting_position; i < length; i++)
+		if (buffer_[i] == ch) return (int) i;
+	return -1;
+}
+
+SimpleString SimpleString::subStringFromTill(char startChar, char lastExcludedChar) const
+{
+	int beginPos = find(startChar);
+	if (beginPos < 0) return "";
+
+	int endPos = findFrom((size_t)beginPos, lastExcludedChar);
+	if (endPos == -1) return subString((size_t)beginPos, size());
+
+	return subString((size_t)beginPos, (size_t) (endPos - beginPos));
+}
+
+
 void SimpleString::copyToBuffer(char* bufferToCopy, size_t bufferSize) const
 {
 	if (bufferToCopy == NULL || bufferSize == 0) return;
@@ -356,7 +386,7 @@ SimpleString HexStringFrom(long value)
 
 SimpleString StringFrom(double value, int precision)
 {
-	SimpleString format = StringFromFormat("%%.%df", precision);
+	SimpleString format = StringFromFormat("%%.%dg", precision);
 	return StringFromFormat(format.asCharString(), value);
 }
 
@@ -428,12 +458,14 @@ SimpleString VStringFromFormat(const char* format, va_list args)
 		resultString = SimpleString(defaultBuffer);
 	}
 	else {
-		char* newBuffer = SimpleString::allocStringBuffer(size + 1);
-		PlatformSpecificVSNprintf(newBuffer, size + 1, format, argsCopy);
+		size_t newBufferSize = (size_t) size + 1;
+		char* newBuffer = SimpleString::allocStringBuffer(newBufferSize);
+		PlatformSpecificVSNprintf(newBuffer, newBufferSize, format, argsCopy);
 		resultString = SimpleString(newBuffer);
 
 		SimpleString::deallocStringBuffer(newBuffer);
 	}
+	va_end(argsCopy);
 	return resultString;
 }
 

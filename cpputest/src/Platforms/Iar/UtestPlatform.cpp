@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <setjmp.h>
 #include <string.h>
+#include <ctype.h>
 #include <math.h>
 #include "CppUTest/TestHarness.h"
 #undef malloc
@@ -44,48 +45,37 @@
 static jmp_buf test_exit_jmp_buf[10];
 static int jmp_buf_index = 0;
 
-bool Utest::executePlatformSpecificSetup()
+int PlatformSpecificSetJmp(void (*function) (void* data), void* data)
 {
-   if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
-      jmp_buf_index++;
-      setup();
-      jmp_buf_index--;
-      return true;
-   }
-   return false;
+	if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
+	    jmp_buf_index++;
+		function(data);
+	    jmp_buf_index--;
+		return 1;
+	}
+	return 0;
 }
 
-void Utest::executePlatformSpecificTestBody()
+void PlatformSpecificLongJmp()
 {
-   if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
-      jmp_buf_index++;
-      testBody();
-      jmp_buf_index--;
-   }
+	jmp_buf_index--;
+	longjmp(test_exit_jmp_buf[jmp_buf_index], 1);
 }
 
-void Utest::executePlatformSpecificTeardown()
+void PlatformSpecificRestoreJumpBuffer()
 {
-   if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
-      jmp_buf_index++;
-      teardown();
-      jmp_buf_index--;
-   }
+	jmp_buf_index--;
 }
 
-void Utest::executePlatformSpecificRunOneTest(TestPlugin* plugin, TestResult& result)
+void PlatformSpecificRunTestInASeperateProcess(UtestShell* shell, TestPlugin* plugin, TestResult* result)
 {
-    if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
-       jmp_buf_index++;
-       runOneTest(plugin, result);
-       jmp_buf_index--;
-    }
+   printf("-p doesn't work on this platform as it is not implemented. Running inside the process\b");
+   shell->runOneTest(plugin, *result);
 }
 
-void Utest::executePlatformSpecificExitCurrentTest()
+TestOutput::WorkingEnvironment PlatformSpecificGetWorkingEnvironment()
 {
-   jmp_buf_index--;
-   longjmp(test_exit_jmp_buf[jmp_buf_index], 1);
+	return TestOutput::eclipse;
 }
 
 ///////////// Time in millis
@@ -171,7 +161,7 @@ char* PlatformSpecificStrStr(const char* s1, const char* s2)
    return strstr((char*)s1, (char*)s2);
 }
 
-int PlatformSpecificVSNprintf(char *str, unsigned int size, const char* format, va_list args)
+int PlatformSpecificVSNprintf(char *str, size_t size, const char* format, va_list args)
 {
    return vsnprintf( str, size, format, args);
 }

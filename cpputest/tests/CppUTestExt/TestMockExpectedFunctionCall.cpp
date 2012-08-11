@@ -260,21 +260,21 @@ TEST(MockExpectedFunctionCall, withANameItsNotFulfilled)
 TEST(MockExpectedFunctionCall, afterSettingCallFulfilledItsFulFilled)
 {
 	call->withName("name");
-	call->callWasMade();
+	call->callWasMade(1);
 	CHECK(call->isFulfilled());
 }
 
 TEST(MockExpectedFunctionCall, calledButNotWithParameterIsNotFulFilled)
 {
 	call->withName("name").withParameter("para", 1);
-	call->callWasMade();
+	call->callWasMade(1);
 	CHECK(!call->isFulfilled());
 }
 
 TEST(MockExpectedFunctionCall, calledAndParametersAreFulfilled)
 {
 	call->withName("name").withParameter("para", 1);
-	call->callWasMade();
+	call->callWasMade(1);
 	call->parameterWasPassed("para");
 	CHECK(call->isFulfilled());
 }
@@ -282,7 +282,7 @@ TEST(MockExpectedFunctionCall, calledAndParametersAreFulfilled)
 TEST(MockExpectedFunctionCall, calledButNotAllParametersAreFulfilled)
 {
 	call->withName("name").withParameter("para", 1).withParameter("two", 2);
-	call->callWasMade();
+	call->callWasMade(1);
 	call->parameterWasPassed("para");
 	CHECK(! call->isFulfilled());
 }
@@ -314,5 +314,30 @@ TEST(MockExpectedFunctionCall, toStringForParameterAndIgnored)
 	call->withParameter("string", "value");
 	call->ignoreOtherParameters();
 	STRCMP_EQUAL("name -> char* string: <value>, other parameters are ignored", call->callToString().asCharString());
+}
+
+TEST(MockExpectedFunctionCall, toStringForCallOrder)
+{
+	call->withName("name");
+	call->withCallOrder(2);
+	STRCMP_EQUAL("name -> expected call order: <2> -> no parameters", call->callToString().asCharString());
+}
+
+TEST(MockExpectedFunctionCall, callOrderIsNotFulfilledWithWrongOrder)
+{
+	call->withName("name");
+	call->withCallOrder(2);
+	call->callWasMade(1);
+	CHECK(call->isFulfilled());
+	CHECK(call->isOutOfOrder());
+}
+
+TEST(MockExpectedFunctionCall, callOrderIsFulfilled)
+{
+	call->withName("name");
+	call->withCallOrder(1);
+	call->callWasMade(1);
+	CHECK(call->isFulfilled());
+	CHECK_FALSE(call->isOutOfOrder());
 }
 

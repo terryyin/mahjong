@@ -29,8 +29,6 @@ extern "C"
 {
 #define _WCHART
 #include "CppUTest/TestHarness_c.h"
-#include "stdlib.h"
-
 }
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestRegistry.h"
@@ -75,7 +73,7 @@ TEST(TestHarness_c, checkReal)
 	CHECK_EQUAL_C_REAL(1.0, 1.1, 0.5);
 	fixture->setTestFunction(_failRealMethod);
 	fixture->runAllTests();
-	fixture->assertPrintContains("expected <1.000000>\n	but was  <2.000000>");
+	fixture->assertPrintContains("expected <1>\n	but was  <2>");
 	fixture->assertPrintContains("arness_c");
 }
 
@@ -104,7 +102,7 @@ TEST(TestHarness_c, checkString)
 	fixture->setTestFunction(_failStringMethod);
 	fixture->runAllTests();
 
-	StringEqualFailure failure(this, "file", 1, "Hello", "Hello World");
+	StringEqualFailure failure(UtestShell::getCurrent(), "file", 1, "Hello", "Hello World");
 	fixture->assertPrintContains(failure.getMessage());
 	fixture->assertPrintContains("arness_c");
 }
@@ -159,6 +157,40 @@ TEST(TestHarness_c, cpputest_malloc_out_of_memory)
 	cpputest_free(mem);
 }
 
+TEST(TestHarness_c, cpputest_malloc_out_of_memory_after_n_mallocs)
+{
+	cpputest_malloc_set_out_of_memory_countdown(3);
+	void * m1 = cpputest_malloc(10);
+	void * m2 = cpputest_malloc(11);
+	void * m3 = cpputest_malloc(12);
+	CHECK(m1);
+	CHECK(m2);
+	POINTERS_EQUAL(0, m3);
+	cpputest_malloc_set_not_out_of_memory();
+	cpputest_free(m1);
+	cpputest_free(m2);
+}
+
+TEST(TestHarness_c, cpputest_malloc_out_of_memory_after_0_mallocs)
+{
+	cpputest_malloc_set_out_of_memory_countdown(0);
+	void * m1 = cpputest_malloc(10);
+	CHECK(m1 == 0);
+	cpputest_malloc_set_not_out_of_memory();
+}
+
+TEST(TestHarness_c, count_mallocs)
+{
+	cpputest_malloc_count_reset();
+	void * m1 = cpputest_malloc(10);
+	void * m2 = cpputest_malloc(11);
+	void * m3 = cpputest_malloc(12);
+	cpputest_free(m1);
+	cpputest_free(m2);
+	cpputest_free(m3);
+	LONGS_EQUAL(3, cpputest_malloc_get_count());
+}
+
 TEST(TestHarness_c, cpputest_calloc)
 {
 	void * mem = cpputest_calloc(10, 10);
@@ -183,13 +215,26 @@ TEST(TestHarness_c, cpputest_realloc_larger)
 	cpputest_free(mem2);
 }
 
+#if CPPUTEST_USE_MEM_LEAK_DETECTION
+
+#include "CppUTest/MemoryLeakDetector.h"
+
 TEST(TestHarness_c, macros)
 {
+	MemoryLeakDetector* memLeakDetector = MemoryLeakWarningPlugin::getGlobalDetector();
+	int memLeaks = memLeakDetector->totalMemoryLeaks(mem_leak_period_checking);
 	void* mem1 = malloc(10);
 	void* mem2 = calloc(10, 20);
 	void* mem3 = realloc(mem2, 100);
+#if CPPUTEST_USE_MALLOC_MACROS
+	LONGS_EQUAL(memLeaks + 2, memLeakDetector->totalMemoryLeaks(mem_leak_period_checking));
+#endif
 	free(mem1);
 	free(mem3);
+#if CPPUTEST_USE_MALLOC_MACROS
+	LONGS_EQUAL(memLeaks, memLeakDetector->totalMemoryLeaks(mem_leak_period_checking));
+#endif
+
 }
 
 TEST(TestHarness_c, callocInitializedToZero)
@@ -199,3 +244,5 @@ TEST(TestHarness_c, callocInitializedToZero)
 		CHECK(mem[i] == 0);
 	free(mem);
 }
+#endif
+

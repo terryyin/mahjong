@@ -114,6 +114,7 @@
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
@@ -132,7 +133,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include,..\include\Platforms\VisualCpp"
+				AdditionalIncludeDirectories="..\include;..\include\Platforms\VisualCpp;..\include\CppUTestExt\CppUTestGMock;..\include\CppUTestExt\CppUTestGTest"
 				PreprocessorDefinitions="_CONSOLE;WIN32;_DEBUG"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -144,7 +145,7 @@
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
-				ForcedIncludeFiles="..\include\Platforms\VisualCpp\Platform.h"
+				ForcedIncludeFiles="..\include\Platforms\VisualCpp\Platform.h;..\include\CppUTest\MemoryLeakDetectorMallocMacros.h"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -159,7 +160,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\lib\CppUTest.lib odbc32.lib odbccp32.lib winmm.lib"
+				AdditionalDependencies="..\lib\CppUTest.lib $(NOINHERIT)"
 				OutputFile=".\Debug/AllTests.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -192,6 +193,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="Debug\AllTests.exe"
 			/>
 		</Configuration>
 	</Configurations>
@@ -203,466 +205,104 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="AllocationInCFile.c"
+				RelativePath=".\AllocationInCFile.c"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="AllocationInCppFile.cpp"
+				RelativePath=".\AllocationInCppFile.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="AllTests.cpp"
+				RelativePath=".\CppUTestExt\AllTests.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="CommandLineArgumentsTest.cpp"
+				RelativePath=".\CheatSheetTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="CommandLineTestRunnerTest.cpp"
+				RelativePath=".\CommandLineArgumentsTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="JUnitOutputTest.cpp"
+				RelativePath=".\CommandLineTestRunnerTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\CppUTest\MemoryLeakAllocator.cpp"
+				RelativePath=".\JUnitOutputTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="MemoryLeakAllocatorTest.cpp"
+				RelativePath=".\MemoryLeakDetectorTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="MemoryLeakDetectorTest.cpp"
+				RelativePath=".\MemoryLeakOperatorOverloadsTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="MemoryLeakOperatorOverloadsTest.cpp"
+				RelativePath=".\MemoryLeakWarningTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="MemoryLeakWarningTest.cpp"
+				RelativePath=".\NullTestTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="NullTestTest.cpp"
+				RelativePath=".\PluginTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="PluginTest.cpp"
+				RelativePath=".\PreprocessorTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="SetPluginTest.cpp"
+				RelativePath=".\SetPluginTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="SimpleStringTest.cpp"
+				RelativePath=".\SimpleStringTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="TestFailureTest.cpp"
+				RelativePath=".\TestFailureTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="TestHarness_cTest.cpp"
+				RelativePath=".\TestFilterTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="TestInstallerTest.cpp"
+				RelativePath=".\TestHarness_cTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="TestOutputTest.cpp"
+				RelativePath=".\TestHarness_cTestCFile.c"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="TestRegistryTest.cpp"
+				RelativePath=".\TestInstallerTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="TestResultTest.cpp"
+				RelativePath=".\TestMemoryAllocatorTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="UtestTest.cpp"
+				RelativePath=".\TestOutputTest.cpp"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\TestRegistryTest.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\TestResultTest.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UtestTest.cpp"
+				>
 			</File>
 		</Filter>
 		<Filter
@@ -670,15 +310,15 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath="AllTests.h"
+				RelativePath=".\AllocationInCFile.h"
 				>
 			</File>
 			<File
-				RelativePath="Extensions\AllTests.h"
+				RelativePath=".\AllocationInCppFile.h"
 				>
 			</File>
 			<File
-				RelativePath="..\include\Platforms\VisualCpp\stdint.h"
+				RelativePath=".\AllTests.h"
 				>
 			</File>
 		</Filter>
@@ -686,6 +326,82 @@
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 			>
+		</Filter>
+		<Filter
+			Name="ext"
+			>
+			<File
+				RelativePath=".\CppUTestExt\TestCodeMemoryReportFormatter.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestGMock.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestGTest.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMemoryReportAllocator.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMemoryReporterPlugin.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMemoryReportFormatter.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockActualFunctionCall.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockCheatSheet.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockExpectedFunctionCall.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockExpectedFunctionsList.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockFailure.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockFailure.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockPlugin.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockSupport.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockSupport_c.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockSupport_cCFile.c"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestMockSupport_cCFile.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CppUTestExt\TestOrderedTest.cpp"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

@@ -29,21 +29,21 @@
 #define D_MemoryReportFormatter_h
 
 class TestOutput;
-class Utest;
+class UtestShell;
 
 class MemoryReportFormatter
 {
 public:
 	virtual ~MemoryReportFormatter(){}
 
-	virtual void report_testgroup_start(TestResult* result, Utest& test)=0;
-	virtual void report_testgroup_end(TestResult* result, Utest& test)=0;
+	virtual void report_testgroup_start(TestResult* result, UtestShell& test)=0;
+	virtual void report_testgroup_end(TestResult* result, UtestShell& test)=0;
 
-	virtual void report_test_start(TestResult* result, Utest& test)=0;
-	virtual void report_test_end(TestResult* result, Utest& test)=0;
+	virtual void report_test_start(TestResult* result, UtestShell& test)=0;
+	virtual void report_test_end(TestResult* result, UtestShell& test)=0;
 
-	virtual void report_alloc_memory(TestResult* result, MemoryLeakAllocator* allocator, size_t size, char* memory, const char* file, int line)=0;
-	virtual void report_free_memory(TestResult* result, MemoryLeakAllocator* allocator, char* memory, const char* file, int line)=0;
+	virtual void report_alloc_memory(TestResult* result, TestMemoryAllocator* allocator, size_t size, char* memory, const char* file, int line)=0;
+	virtual void report_free_memory(TestResult* result, TestMemoryAllocator* allocator, char* memory, const char* file, int line)=0;
 };
 
 class NormalMemoryReportFormatter : public MemoryReportFormatter
@@ -52,14 +52,14 @@ public:
 	NormalMemoryReportFormatter();
 	virtual ~NormalMemoryReportFormatter();
 
-	virtual void report_testgroup_start(TestResult* /*result*/, Utest& /*test*/);
-	virtual void report_testgroup_end(TestResult* /*result*/, Utest& /*test*/){};
+	virtual void report_testgroup_start(TestResult* /*result*/, UtestShell& /*test*/);
+	virtual void report_testgroup_end(TestResult* /*result*/, UtestShell& /*test*/){};
 
-	virtual void report_test_start(TestResult* result, Utest& test);
-	virtual void report_test_end(TestResult* result, Utest& test);
+	virtual void report_test_start(TestResult* result, UtestShell& test);
+	virtual void report_test_end(TestResult* result, UtestShell& test);
 
-	virtual void report_alloc_memory(TestResult* result, MemoryLeakAllocator* allocator, size_t size, char* memory, const char* file, int line);
-	virtual void report_free_memory(TestResult* result, MemoryLeakAllocator* allocator, char* memory, const char* file, int line);
+	virtual void report_alloc_memory(TestResult* result, TestMemoryAllocator* allocator, size_t size, char* memory, const char* file, int line);
+	virtual void report_free_memory(TestResult* result, TestMemoryAllocator* allocator, char* memory, const char* file, int line);
 };
 
 #endif

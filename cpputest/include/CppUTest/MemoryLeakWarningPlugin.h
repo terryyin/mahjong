@@ -55,6 +55,8 @@ extern "C" { /* include for size_t definition */
 #include <new>
 void* operator new(size_t size) throw(std::bad_alloc);
 void* operator new[](size_t size) throw(std::bad_alloc);
+void* operator new(size_t size, const std::nothrow_t&) throw();
+void* operator new[](size_t size, const std::nothrow_t&) throw();
 void operator delete(void* mem) throw();
 void operator delete[](void* mem) throw();
 
@@ -73,7 +75,10 @@ void operator delete[](void* mem);
 
 #endif
 
+extern void crash_on_allocation_number(unsigned alloc_number);
+
 class MemoryLeakDetector;
+class MemoryLeakFailure;
 
 class MemoryLeakWarningPlugin: public TestPlugin
 {
@@ -82,21 +87,31 @@ public:
 			MemoryLeakDetector* localDetector = 0);
 	virtual ~MemoryLeakWarningPlugin();
 
-	virtual void preTestAction(Utest& test, TestResult& result);
-	virtual void postTestAction(Utest& test, TestResult& result);
+	virtual void preTestAction(UtestShell& test, TestResult& result);
+	virtual void postTestAction(UtestShell& test, TestResult& result);
 
 	virtual const char* FinalReport(int toBeDeletedLeaks = 0);
 
 	void ignoreAllLeaksInTest();
 	void expectLeaksInTest(int n);
 
+	void destroyGlobalDetectorAndTurnOffMemoryLeakDetectionInDestructor(bool des);
+
 	MemoryLeakDetector* getMemoryLeakDetector();
+
 	static MemoryLeakWarningPlugin* getFirstPlugin();
 
 	static MemoryLeakDetector* getGlobalDetector();
+	static MemoryLeakFailure* getGlobalFailureReporter();
+	static void setGlobalDetector(MemoryLeakDetector* detector, MemoryLeakFailure* reporter);
+	static void destroyGlobalDetector();
+
+	static void turnOffNewDeleteOverloads();
+	static void turnOnNewDeleteOverloads();
 private:
 	MemoryLeakDetector* memLeakDetector_;
 	bool ignoreAllWarnings_;
+	bool destroyGlobalDetectorAndTurnOfMemoryLeakDetectionInDestructor_;
 	int expectedLeaks_;
 	int failureCount_;
 

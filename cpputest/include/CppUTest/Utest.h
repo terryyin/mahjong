@@ -33,52 +33,57 @@
 
 #include "SimpleString.h"
 
-/*! \brief UTest.h
- * \ingroup someGroup
- *
- * Something about UTest.h
- *
- * \see TEST_GROUP
- * \see TEST
- */
-
 class TestResult;
 class TestPlugin;
 class TestFailure;
+class TestFilter;
 
 extern bool doubles_equal(double d1, double d2, double threshold);
+
+//////////////////// Utest
+
+class UtestShell;
 
 class Utest
 {
 public:
-	Utest(const char* groupName, const char* testName, const char* fileName,
-			int lineNumber);
+	Utest();
 	virtual ~Utest();
+	virtual void run();
 
-	virtual void run(TestResult& result);
+    virtual void setup();
+    virtual void teardown();
+	virtual void testBody();
+};
+
+//////////////////// UtestShell
+
+class UtestShell
+{
+public:
+	UtestShell(const char* groupName, const char* testName, const char* fileName,
+			int lineNumber);
+	virtual ~UtestShell();
+
 	virtual void runOneTestWithPlugins(TestPlugin* plugin, TestResult& result);
 	virtual SimpleString getFormattedName() const;
 
-	virtual Utest* addTest(Utest* test);
-	virtual Utest *getNext() const;
+	virtual UtestShell* addTest(UtestShell* test);
+	virtual UtestShell *getNext() const;
 	virtual bool isNull() const;
 	virtual int countTests();
 
-	bool shouldRun(const SimpleString& groupFilter, const SimpleString& nameFilter) const;
+	bool shouldRun(const TestFilter& groupFilter, const TestFilter& nameFilter) const;
 	const SimpleString getName() const;
 	const SimpleString getGroup() const;
 	const SimpleString getFile() const;
 	int getLineNumber() const;
     const virtual char *getProgressIndicator() const;
 
-    virtual void setup();
-    virtual void teardown();
-	virtual void testBody();
-
 	static TestResult *getTestResult();
-    static Utest *getCurrent();
+    static UtestShell *getCurrent();
 
-    virtual void assertTrue(bool condition, const char *conditionString, const char *fileName, int lineNumber);
+    virtual void assertTrue(bool condition, const char *checkString, const char *conditionString, const char *fileName, int lineNumber);
     virtual void assertCstrEqual(const char *expected, const char *actual, const char *fileName, int lineNumber);
     virtual void assertCstrNoCaseEqual(const char *expected, const char *actual, const char *fileName, int lineNumber);
     virtual void assertCstrContains(const char *expected, const char *actual, const char *fileName, int lineNumber);
@@ -97,16 +102,22 @@ public:
     void setTestName(const char *testName);
 
     virtual void exitCurrentTest();
-protected:
-    virtual void runOneTest(TestPlugin *plugin, TestResult & result);
-    virtual void executePlatformSpecificRunOneTest(TestPlugin *plugin, TestResult & result);
-    virtual bool executePlatformSpecificSetup();
-    virtual void executePlatformSpecificTestBody();
-    virtual void executePlatformSpecificTeardown();
-    virtual void executePlatformSpecificExitCurrentTest();
+    virtual void exitCurrentTestWithoutException();
 
-    Utest();
-    Utest(const char *groupName, const char *testName, const char *fileName, int lineNumber, Utest *nextTest);
+    static void crash();
+    static void setCrashMethod(void (*crashme)());
+    static void resetCrashMethod();
+
+    virtual bool isRunInSeperateProcess() const;
+    virtual void setRunInSeperateProcess();
+
+    virtual Utest* createTest();
+    virtual void destroyTest(Utest* test);
+
+    virtual void runOneTest(TestPlugin *plugin, TestResult & result);
+protected:
+    UtestShell();
+    UtestShell(const char *groupName, const char *testName, const char *fileName, int lineNumber, UtestShell *nextTest);
 
     virtual SimpleString getMacroName() const;
 private:
@@ -114,67 +125,100 @@ private:
     const char *name_;
     const char *file_;
     int lineNumber_;
-    Utest *next_;
+    UtestShell *next_;
+    bool isRunAsSeperateProcess_;
 
-	void setTestResult(TestResult* result);
-	void setCurrentTest(Utest* test);
+    void setTestResult(TestResult* result);
+	void setCurrentTest(UtestShell* test);
 
-	static Utest* currentTest_;
+	static UtestShell* currentTest_;
 	static TestResult* testResult_;
 
     void failWith(const TestFailure& failure);
 };
 
-//////////////////// NulLTest
+//////////////////// NullTest
 
-class NullTest: public Utest
+class NullTestShell: public UtestShell
 {
 public:
-	explicit NullTest();
-	explicit NullTest(const char* fileName, int lineNumber);
-	virtual ~NullTest();
+	explicit NullTestShell();
+	explicit NullTestShell(const char* fileName, int lineNumber);
+	virtual ~NullTestShell();
 
-	void testBody()
-	{
-	}
+	void testBody();
 
-	static NullTest& instance();
+	static NullTestShell& instance();
 
 	virtual int countTests();
-	virtual Utest*getNext() const;
+	virtual UtestShell*getNext() const;
 	virtual bool isNull() const;
 private:
 
-	NullTest(const NullTest&);
-	NullTest& operator=(const NullTest&);
+	NullTestShell(const NullTestShell&);
+	NullTestShell& operator=(const NullTestShell&);
 
 };
 
+
 //////////////////// ExecFunctionTest
 
-class ExecFunctionTest: public Utest
+class ExecFunctionTestShell;
+
+class ExecFunctionTest : public Utest
+{
+public:
+	ExecFunctionTest(ExecFunctionTestShell* shell);
+	void testBody();
+	virtual void setup();
+	virtual void teardown();
+private:
+	ExecFunctionTestShell* shell_;
+};
+
+//////////////////// ExecFunctionTestShell
+
+class ExecFunctionTestShell: public UtestShell
 {
 public:
 	void (*setup_)();
 	void (*teardown_)();
 	void (*testFunction_)();
-	ExecFunctionTest(void(*set)() = 0, void(*tear)() = 0) :
-		Utest("Generic", "Generic", "Generic", 1), setup_(set), teardown_(
+
+	ExecFunctionTestShell(void(*set)() = 0, void(*tear)() = 0) :
+		UtestShell("Generic", "Generic", "Generic", 1), setup_(set), teardown_(
 				tear), testFunction_(0)
 	{
 	}
-	void testBody()
-	{
-		if (testFunction_) testFunction_();
-	}
-	virtual void setup()
-	{
-		if (setup_) setup_();
-	}
-	virtual void teardown()
-	{
-		if (teardown_) teardown_();
-	}
+	Utest* createTest() { return new ExecFunctionTest(this); };
+};
+
+//////////////////// CppUTestFailedException
+
+class CppUTestFailedException
+{
+public:
+	int dummy_;
+};
+
+//////////////////// IgnoredTest
+
+class IgnoredUtestShell : public UtestShell
+{
+public:
+	IgnoredUtestShell();
+	virtual ~IgnoredUtestShell();
+	explicit IgnoredUtestShell(const char* groupName, const char* testName,
+			const char* fileName, int lineNumber);
+	virtual const char* getProgressIndicator() const;
+	protected:  virtual SimpleString getMacroName() const;
+    virtual void runOneTestWithPlugins(TestPlugin* plugin, TestResult& result);
+
+private:
+
+	IgnoredUtestShell(const IgnoredUtestShell&);
+	IgnoredUtestShell& operator=(const IgnoredUtestShell&);
+
 };
 
 //////////////////// TestInstaller
@@ -182,7 +226,7 @@ public:
 class TestInstaller
 {
 public:
-	explicit TestInstaller(Utest*, const char* groupName, const char* testName,
+	explicit TestInstaller(UtestShell& shell, const char* groupName, const char* testName,
 			const char* fileName, int lineNumber);
 	virtual ~TestInstaller();
 

@@ -28,8 +28,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/SimpleString.h"
 #include "CppUTest/PlatformSpecificFunctions.h"
-#include "CppUTest/MemoryLeakAllocator.h"
-#include <stdlib.h>
+#include "CppUTest/TestMemoryAllocator.h"
 
 TEST_GROUP(SimpleString)
 {
@@ -37,10 +36,10 @@ TEST_GROUP(SimpleString)
 
 TEST(SimpleString, defaultAllocatorIsNewArrayAllocator)
 {
-	POINTERS_EQUAL(MemoryLeakAllocator::getCurrentNewArrayAllocator(), SimpleString::getStringAllocator());
+	POINTERS_EQUAL(getCurrentNewArrayAllocator(), SimpleString::getStringAllocator());
 }
 
-class MyOwnStringAllocator : public StandardMallocAllocator
+class MyOwnStringAllocator : public TestMemoryAllocator
 {
 public:
 	MyOwnStringAllocator() : memoryWasAllocated(false) {};
@@ -50,7 +49,7 @@ public:
 	char* alloc_memory(size_t size, const char* file, int line)
 	{
 		memoryWasAllocated = true;
-		return StandardMallocAllocator::alloc_memory(size, file, line);
+		return TestMemoryAllocator::alloc_memory(size, file, line);
 	}
 };
 
@@ -324,6 +323,44 @@ TEST(SimpleString, subStringBeginPosOutOfBounds)
 	STRCMP_EQUAL("", str.subString(13, 5).asCharString());
 }
 
+TEST(SimpleString, subStringFromTillNormal)
+{
+	SimpleString str("Hello World");
+	STRCMP_EQUAL("Hello", str.subStringFromTill('H', ' ').asCharString());
+}
+
+TEST(SimpleString, subStringFromTillOutOfBounds)
+{
+	SimpleString str("Hello World");
+	STRCMP_EQUAL("World", str.subStringFromTill('W', '!').asCharString());
+}
+
+TEST(SimpleString, subStringFromTillStartDoesntExist)
+{
+	SimpleString str("Hello World");
+	STRCMP_EQUAL("", str.subStringFromTill('!', ' ').asCharString());
+}
+
+TEST(SimpleString, subStringFromTillWhenTheEndAppearsBeforeTheStart)
+{
+	SimpleString str("Hello World");
+	STRCMP_EQUAL("World", str.subStringFromTill('W', 'H').asCharString());
+}
+
+TEST(SimpleString, findNormal)
+{
+	SimpleString str("Hello World");
+	LONGS_EQUAL(0, str.find('H'));
+	LONGS_EQUAL(1, str.find('e'));
+	LONGS_EQUAL(-1, str.find('!'));
+}
+
+TEST(SimpleString, at)
+{
+	SimpleString str("Hello World");
+	BYTES_EQUAL('H', str.at(0));
+}
+
 TEST(SimpleString, copyInBufferNormal)
 {
 	SimpleString str("Hello World");
@@ -345,7 +382,7 @@ TEST(SimpleString, copyInBufferWithEmptyBuffer)
 TEST(SimpleString, copyInBufferWithBiggerBufferThanNeeded)
 {
 	SimpleString str("Hello");
-	int bufferSize = 20;
+	size_t bufferSize = 20;
 	char* buffer= (char*) malloc(bufferSize);
 	str.copyToBuffer(buffer, bufferSize);
 	STRCMP_EQUAL(str.asCharString(), buffer);
@@ -373,9 +410,19 @@ TEST(SimpleString, Characters)
 TEST(SimpleString, Doubles)
 {
 	SimpleString s(StringFrom(1.2));
-	STRCMP_EQUAL("1.200000", s.asCharString());
-	s = StringFrom(1.2, 2);
-	STRCMP_EQUAL("1.20", s.asCharString());
+	STRCMP_EQUAL("1.2", s.asCharString());
+}
+
+TEST(SimpleString, SmallDoubles)
+{
+	SimpleString s(StringFrom(1.2e-10));
+	STRCMP_CONTAINS("1.2e", s.asCharString());
+}
+
+TEST(SimpleString, Sizes)
+{
+	size_t size = 10;
+	STRCMP_EQUAL("10", StringFrom((int) size).asCharString());
 }
 
 TEST(SimpleString, HexStrings)
@@ -390,6 +437,18 @@ TEST(SimpleString, StringFromFormat)
 	STRCMP_EQUAL("Hello World! 2009", h1.asCharString());
 }
 
+TEST(SimpleString, StringFromFormatpointer)
+{
+	//this is not a great test. but %p is odd on mingw
+	SimpleString h1 = StringFromFormat("%p", 1);
+	if (h1.size() == 3)
+		STRCMP_EQUAL("0x1", h1.asCharString())
+	else if (h1.size() == 8)
+		STRCMP_EQUAL("00000001", h1.asCharString())
+	else
+		FAIL("Off %p behavior")
+}
+
 TEST(SimpleString, StringFromFormatLarge)
 {
 	const char* s = "ThisIsAPrettyLargeStringAndIfWeAddThisManyTimesToABufferItWillbeFull";
@@ -397,7 +456,7 @@ TEST(SimpleString, StringFromFormatLarge)
 	LONGS_EQUAL(10, h1.count(s));
 }
 
-static int WrappedUpVSNPrintf(char* buf, int n, const char* format, ...)
+static int WrappedUpVSNPrintf(char* buf, size_t n, const char* format, ...)
 {
 	va_list arguments;
 	va_start(arguments, format);

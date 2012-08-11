@@ -56,33 +56,33 @@ TEST_GROUP(NormalMemoryReportFormatter)
 
 TEST(NormalMemoryReportFormatter, mallocCreatesAnMallocCall)
 {
-	formatter.report_alloc_memory(testResult, StandardMallocAllocator::defaultAllocator(), 10, memory01, "file", 9);
+	formatter.report_alloc_memory(testResult, defaultMallocAllocator(), 10, memory01, "file", 9);
 	TESTOUPUT_EQUAL(StringFromFormat("\tAllocation using malloc of size: 10 pointer: %p at file:9\n", memory01).asCharString());
 }
 
 TEST(NormalMemoryReportFormatter, freeCreatesAnFreeCall)
 {
-	formatter.report_free_memory(testResult, StandardMallocAllocator::defaultAllocator(), memory01, "boo", 6);
+	formatter.report_free_memory(testResult, defaultMallocAllocator(), memory01, "boo", 6);
 	TESTOUPUT_EQUAL(StringFromFormat("\tDeallocation using free of pointer: %p at boo:6\n", memory01).asCharString());
 }
 
 TEST(NormalMemoryReportFormatter, testStarts)
 {
-	Utest test("groupName", "TestName", "file", 1);
+	UtestShell test("groupName", "TestName", "file", 1);
 	formatter.report_test_start(testResult, test);
 	TESTOUPUT_EQUAL("TEST(groupName, TestName)\n");
 }
 
 TEST(NormalMemoryReportFormatter, testEnds)
 {
-	Utest test("groupName", "TestName", "file", 1);
+	UtestShell test("groupName", "TestName", "file", 1);
 	formatter.report_test_end(testResult, test);
 	TESTOUPUT_EQUAL("ENDTEST(groupName, TestName)\n");
 }
 
 TEST(NormalMemoryReportFormatter, testGroupStarts)
 {
-	Utest test("groupName", "TestName", "file", 1);
+	UtestShell test("groupName", "TestName", "file", 1);
 	formatter.report_testgroup_start(testResult, test);
 	TESTOUPUT_EQUAL("------------------------------TEST GROUP(groupName)-----------------------------\n");
 }

@@ -54,6 +54,7 @@ int CommandLineTestRunner::RunAllTests(int ac, const char** av)
 	ConsoleTestOutput output;
 
 	MemoryLeakWarningPlugin memLeakWarn(DEF_PLUGIN_MEM_LEAK);
+	memLeakWarn.destroyGlobalDetectorAndTurnOffMemoryLeakDetectionInDestructor(true);
 	TestRegistry::getCurrentRegistry()->installPlugin(&memLeakWarn);
 
 	{
@@ -78,7 +79,6 @@ int CommandLineTestRunner::runAllTestsMain()
 
 	testResult = runAllTests();
 
-	TestRegistry::getCurrentRegistry()->cleanup();
 	return testResult;
 }
 
@@ -87,6 +87,7 @@ void CommandLineTestRunner::initializeTestRun()
 	TestRegistry::getCurrentRegistry()->groupFilter(arguments_->getGroupFilter());
 	TestRegistry::getCurrentRegistry()->nameFilter(arguments_->getNameFilter());
 	if (arguments_->isVerbose()) output_->verbose();
+	if (arguments_->runTestsInSeperateProcess()) TestRegistry::getCurrentRegistry()->setRunTestsInSeperateProcess();
 }
 
 int CommandLineTestRunner::runAllTests()
@@ -130,12 +131,12 @@ int CommandLineTestRunner::getRepeatCount()
 	return arguments_->getRepeatCount();
 }
 
-SimpleString CommandLineTestRunner::getGroupFilter()
+TestFilter CommandLineTestRunner::getGroupFilter()
 {
 	return arguments_->getGroupFilter();
 }
 
-SimpleString CommandLineTestRunner::getNameFilter()
+TestFilter CommandLineTestRunner::getNameFilter()
 {
 	return arguments_->getNameFilter();
 }

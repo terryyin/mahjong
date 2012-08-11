@@ -25,8 +25,8 @@ Test Macros
     * TEST_SETUP() - Declare a void setup method in a TEST_GROUP
             - this is the same as declaring void setup()
     * TEST_TEARDOWN() - Declare a void setup method in a TEST_GROUP
-    * EXPORT_TEST_GROUP(group) - Export the name of a test group so it can 
-      be linked in from a library
+    * IMPORT_TEST_GROUP(group) - Export the name of a test group so it can 
+      be linked in from a library. Needs to be done in main.
 
 
 Set up and tear down support
@@ -40,6 +40,8 @@ Assertion Macros
 The failure of one of these macros causes the current test to immediately exit
 
     * CHECK(boolean condition) - checks any boolean result
+    * CHECK_TRUE(boolean condition) - checks for true
+    * CHECK_FALSE(boolean condition) - checks for false
     * CHECK_EQUAL(expected, actual) - checks for equality between entities 
       using ==. So if you have a class that supports operator==() you can use 
       this macro to compare two instances.

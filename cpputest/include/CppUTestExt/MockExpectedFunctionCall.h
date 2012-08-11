@@ -41,6 +41,7 @@ public:
 	virtual ~MockExpectedFunctionCall();
 
 	virtual MockFunctionCall& withName(const SimpleString& name);
+	virtual MockFunctionCall& withCallOrder(int);
 	virtual MockFunctionCall& withParameter(const SimpleString& name, int value);
 	virtual MockFunctionCall& withParameter(const SimpleString& name, double value);
 	virtual MockFunctionCall& withParameter(const SimpleString& name, const char* value);
@@ -70,8 +71,9 @@ public:
 	virtual bool isFulfilledWithoutIgnoredParameters();
 	virtual bool areParametersFulfilled();
 	virtual bool areIgnoredParametersFulfilled();
+	virtual bool isOutOfOrder() const;
 
-	virtual void callWasMade();
+	virtual void callWasMade(int callOrder);
 	virtual void parameterWasPassed(const SimpleString& name);
 	virtual void parametersWereIgnored();
 	virtual void wasPassedToObject();
@@ -80,6 +82,8 @@ public:
 	virtual SimpleString callToString();
 	virtual SimpleString missingParametersToString();
 
+	enum { NOT_CALLED_YET = -1, NO_EXPECTED_CALL_ORDER = -1};
+	virtual int getCallOrder() const;
 private:
 
 	class MockExpectedFunctionParameter : public MockNamedValue
@@ -97,7 +101,9 @@ private:
 
 	bool ignoreOtherParameters_;
 	bool parametersWereIgnored_;
-	bool wasCallMade_;
+	int callOrder_;
+	int expectedCallOrder_;
+	bool outOfOrder_;
 	MockNamedValueList* parameters_;
 	MockNamedValue returnValue_;
 	void* objectPtr_;

@@ -31,24 +31,21 @@
 
 namespace
 {
-void stub()
-{
-}
 const int testLineNumber = 1;
 }
 
-class MockTest: public Utest
+class MockTest: public UtestShell
 {
 public:
 	MockTest(const char* group = "Group") :
-		Utest(group, "Name", "File", testLineNumber), hasRun_(false)
+		UtestShell(group, "Name", "File", testLineNumber), hasRun_(false)
 	{
 	}
-	void testBody()
+	virtual void runOneTestWithPlugins(TestPlugin*, TestResult&)
 	{
 		hasRun_ = true;
 	}
-	;
+
 	bool hasRun_;
 };
 
@@ -68,11 +65,10 @@ public:
 	{
 		resetCount();
 	}
-	;
+
 	virtual ~MockTestResult()
 	{
 	}
-	;
 
 	void resetCount()
 	{
@@ -92,19 +88,19 @@ public:
 	{
 		countTestsEnded++;
 	}
-	virtual void currentTestStarted(Utest* /*test*/)
+	virtual void currentTestStarted(UtestShell* /*test*/)
 	{
 		countCurrentTestStarted++;
 	}
-	virtual void currentTestEnded(Utest* /*test*/)
+	virtual void currentTestEnded(UtestShell* /*test*/)
 	{
 		countCurrentTestEnded++;
 	}
-	virtual void currentGroupStarted(Utest* /*test*/)
+	virtual void currentGroupStarted(UtestShell* /*test*/)
 	{
 		countCurrentGroupStarted++;
 	}
-	virtual void currentGroupEnded(Utest* /*test*/)
+	virtual void currentGroupEnded(UtestShell* /*test*/)
 	{
 		countCurrentGroupEnded++;
 	}
@@ -141,6 +137,14 @@ TEST_GROUP(TestRegistry)
 		delete test3;
 		delete result;
 		delete output;
+	}
+
+	void addAndRunAllTests()
+	{
+		myRegistry->addTest(test1);
+		myRegistry->addTest(test2);
+		myRegistry->addTest(test3);
+		myRegistry->runAllTests(*result);
 	}
 };
 
@@ -193,10 +197,7 @@ TEST(TestRegistry, runTwoTestsCheckResultFunctionsCalled)
 
 TEST(TestRegistry, runThreeTestsandTwoGroupsCheckResultFunctionsCalled)
 {
-	myRegistry->addTest(test1);
-	myRegistry->addTest(test2);
-	myRegistry->addTest(test3);
-	myRegistry->runAllTests(*result);
+	addAndRunAllTests();
 	LONGS_EQUAL(2, mockResult->countCurrentGroupStarted);
 	LONGS_EQUAL(2, mockResult->countCurrentGroupEnded);
 	LONGS_EQUAL(3, mockResult->countCurrentTestStarted);
@@ -229,3 +230,56 @@ TEST(TestRegistry, reallyUndoLastTest)
 	CHECK(test1->hasRun_);
 	CHECK(!test2->hasRun_);
 }
+
+TEST(TestRegistry, findTestWithNameDoesntExist)
+{
+	CHECK(myRegistry->findTestWithName("ThisTestDoesntExists") == NULL);
+}
+
+TEST(TestRegistry, findTestWithName)
+{
+	test1->setTestName("NameOfATestThatDoesExist");
+	myRegistry->addTest(test1);
+	CHECK(myRegistry->findTestWithName("NameOfATestThatDoesExist"));
+}
+
+TEST(TestRegistry, findTestWithGroupDoesntExist)
+{
+	CHECK(myRegistry->findTestWithGroup("ThisTestGroupDoesntExists") == NULL);
+}
+
+TEST(TestRegistry, findTestWithGroup)
+{
+	test1->setGroupName("GroupOfATestThatDoesExist");
+	myRegistry->addTest(test1);
+	CHECK(myRegistry->findTestWithGroup("GroupOfATestThatDoesExist"));
+}
+
+TEST(TestRegistry, nameFilterWorks)
+{
+	test1->setTestName("testname");
+	test2->setTestName("noname");
+	myRegistry->nameFilter("testname");
+	addAndRunAllTests();
+	CHECK(test1->hasRun_);
+	CHECK(!test2->hasRun_);
+}
+
+TEST(TestRegistry, groupFilterWorks)
+{
+	test1->setGroupName("groupname");
+	test2->setGroupName("noname");
+	myRegistry->groupFilter("groupname");
+	addAndRunAllTests();
+	CHECK(test1->hasRun_);
+	CHECK(!test2->hasRun_);
+}
+
+TEST(TestRegistry, runTestInSeperateProcess)
+{
+	myRegistry->setRunTestsInSeperateProcess();
+	myRegistry->addTest(test1);
+	myRegistry->runAllTests(*result);
+	CHECK(test1->isRunInSeperateProcess());
+}
+

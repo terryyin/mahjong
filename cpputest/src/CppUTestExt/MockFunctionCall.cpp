@@ -97,6 +97,12 @@ MockFunctionCall& MockFunctionCallComposite::withName(const SimpleString& name)
 	return *this;
 }
 
+MockFunctionCall& MockFunctionCallComposite::withCallOrder(int)
+{
+	FAIL("withCallOrder not supported for CompositeCalls");
+	return *this;
+}
+
 MockFunctionCall& MockFunctionCallComposite::withParameter(const SimpleString& name, int value)
 {
 	for (MockFunctionCallCompositeNode* node = head_; node != NULL; node = node->next_)
@@ -148,7 +154,7 @@ MockFunctionCall& MockFunctionCallComposite::andReturnValue(int value)
 	return *this;
 }
 
-MockFunctionCall& MockFunctionCallComposite::MockFunctionCallComposite::andReturnValue(double value)
+MockFunctionCall& MockFunctionCallComposite::andReturnValue(double value)
 {
 	for (MockFunctionCallCompositeNode* node = head_; node != NULL; node = node->next_)
 		node->call_.andReturnValue(value);
@@ -199,6 +205,13 @@ MockFunctionCall& MockFunctionCallTrace::withName(const SimpleString& name)
 {
 	traceBuffer_ += "\nFunction name: ";
 	traceBuffer_ += name;
+	return *this;
+}
+
+MockFunctionCall& MockFunctionCallTrace::withCallOrder(int callOrder)
+{
+	traceBuffer_ += "\nwithCallOrder: ";
+	traceBuffer_ += StringFrom(callOrder);
 	return *this;
 }
 

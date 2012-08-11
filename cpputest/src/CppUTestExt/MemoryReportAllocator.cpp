@@ -52,17 +52,12 @@ const char* MemoryReportAllocator::free_name()
 	return realAllocator_->free_name();
 }
 
-void MemoryReportAllocator::setRealAllocator(MemoryLeakAllocator* allocator)
+void MemoryReportAllocator::setRealAllocator(TestMemoryAllocator* allocator)
 {
 	realAllocator_ = allocator;
 }
 
-bool MemoryReportAllocator::allocateMemoryLeakNodeSeparately()
-{
-	return realAllocator_->allocateMemoryLeakNodeSeparately();
-}
-
-MemoryLeakAllocator* MemoryReportAllocator::getRealAllocator()
+TestMemoryAllocator* MemoryReportAllocator::getRealAllocator()
 {
 	return realAllocator_;
 }

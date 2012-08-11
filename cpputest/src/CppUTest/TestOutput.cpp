@@ -29,6 +29,21 @@
 #include "CppUTest/TestOutput.h"
 #include "CppUTest/PlatformSpecificFunctions.h"
 
+TestOutput::WorkingEnvironment TestOutput::workingEnvironment_ = TestOutput::detectEnvironment;
+
+void TestOutput::setWorkingEnvironment(TestOutput::WorkingEnvironment workEnvironment)
+{
+	workingEnvironment_ = workEnvironment;
+}
+
+TestOutput::WorkingEnvironment TestOutput::getWorkingEnvironment()
+{
+	if (workingEnvironment_ == TestOutput::detectEnvironment)
+		return PlatformSpecificGetWorkingEnvironment();
+	return workingEnvironment_;
+}
+
+
 TestOutput::TestOutput() :
 	dotCount_(0), verbose_(false), progressIndication_(".")
 {
@@ -43,6 +58,11 @@ void TestOutput::verbose()
 	verbose_ = true;
 }
 
+void TestOutput::print(const char* str)
+{
+	printBuffer(str);
+}
+
 void TestOutput::print(long n)
 {
 	print(StringFrom(n).asCharString());
@@ -50,7 +70,7 @@ void TestOutput::print(long n)
 
 void TestOutput::printDouble(double d)
 {
-	print(StringFrom(d, 3).asCharString());
+	print(StringFrom(d).asCharString());
 }
 
 void TestOutput::printHex(long n)
@@ -70,7 +90,7 @@ TestOutput& operator<<(TestOutput& p, long int i)
 	return p;
 }
 
-void TestOutput::printCurrentTestStarted(const Utest& test)
+void TestOutput::printCurrentTestStarted(const UtestShell& test)
 {
 	if (verbose_) print(test.getFormattedName().asCharString());
 }
@@ -102,7 +122,7 @@ void TestOutput::printTestsStarted()
 {
 }
 
-void TestOutput::printCurrentGroupStarted(const Utest& /*test*/)
+void TestOutput::printCurrentGroupStarted(const UtestShell& /*test*/)
 {
 }
 
@@ -161,14 +181,14 @@ void TestOutput::print(const TestFailure& failure)
 
 void TestOutput::printFileAndLineForTestAndFailure(const TestFailure& failure)
 {
-	printEclipseErrorInFileOnLine(failure.getTestFileName(), failure.getTestLineNumber());
+	printErrorInFileOnLineFormattedForWorkingEnvironment(failure.getTestFileName(), failure.getTestLineNumber());
 	printFailureInTest(failure.getTestName());
-	printEclipseErrorInFileOnLine(failure.getFileName(), failure.getFailureLineNumber());
+	printErrorInFileOnLineFormattedForWorkingEnvironment(failure.getFileName(), failure.getFailureLineNumber());
 }
 
 void TestOutput::printFileAndLineForFailure(const TestFailure& failure)
 {
-	printEclipseErrorInFileOnLine(failure.getFileName(), failure.getFailureLineNumber());
+	printErrorInFileOnLineFormattedForWorkingEnvironment(failure.getFileName(), failure.getFailureLineNumber());
 	printFailureInTest(failure.getTestName());
 }
 
@@ -186,6 +206,14 @@ void TestOutput::printFailureMessage(SimpleString reason)
 	print("\n\n");
 }
 
+void TestOutput::printErrorInFileOnLineFormattedForWorkingEnvironment(SimpleString file, int lineNumber)
+{
+	if (TestOutput::getWorkingEnvironment() == TestOutput::vistualStudio)
+		printVistualStudioErrorInFileOnLine(file, lineNumber);
+	else
+		printEclipseErrorInFileOnLine(file, lineNumber);
+}
+
 void TestOutput::printEclipseErrorInFileOnLine(SimpleString file, int lineNumber)
 {
 	print("\n");
@@ -196,10 +224,19 @@ void TestOutput::printEclipseErrorInFileOnLine(SimpleString file, int lineNumber
 	print(" error:");
 }
 
-void ConsoleTestOutput::print(const char* s)
+void TestOutput::printVistualStudioErrorInFileOnLine(SimpleString file, int lineNumber)
+{
+	print("\n");
+	print(file.asCharString());
+	print("(");
+	print(lineNumber);
+	print("):");
+	print(" error:");
+}
+
+void ConsoleTestOutput::printBuffer(const char* s)
 {
 	while (*s) {
-		if ('\n' == *s) PlatformSpecificPutchar('\r');
 		PlatformSpecificPutchar(*s);
 		s++;
 	}

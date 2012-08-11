@@ -41,7 +41,7 @@ TEST_GROUP(TestOutput)
 {
 	TestOutput* printer;
 	StringBufferTestOutput* mock;
-	Utest* tst;
+	UtestShell* tst;
 	TestFailure *f;
 	TestFailure *f2;
 	TestFailure *f3;
@@ -51,7 +51,7 @@ TEST_GROUP(TestOutput)
 	{
 		mock = new StringBufferTestOutput();
 		printer = mock;
-		tst = new Utest("group", "test", "file", 10);
+		tst = new UtestShell("group", "test", "file", 10);
 		f = new TestFailure(tst, "failfile", 20, "message");
 		f2 = new TestFailure(tst, "file", 20, "message");
 		f3 = new TestFailure(tst, "file", 2, "message");
@@ -59,9 +59,12 @@ TEST_GROUP(TestOutput)
 		result->setTotalExecutionTime(10);
 		millisTime = 0;
 		SetPlatformSpecificTimeInMillisMethod(MockGetPlatformSpecificTimeInMillis);
+		TestOutput::setWorkingEnvironment(TestOutput::eclipse);
+
 	}
 	void teardown()
 	{
+		TestOutput::setWorkingEnvironment(TestOutput::detectEnvironment);
 		delete printer;
 		delete tst;
 		delete f;
@@ -88,7 +91,7 @@ TEST(TestOutput, PrintLong)
 TEST(TestOutput, PrintDouble)
 {
 	printer->printDouble(12.34);
-	STRCMP_EQUAL("12.340", mock->getOutput().asCharString());
+	STRCMP_EQUAL("12.34", mock->getOutput().asCharString());
 }
 
 TEST(TestOutput, StreamOperators)
@@ -172,6 +175,16 @@ TEST(TestOutput, PrintFailureWithFailInHelper)
 	const char* expected =
 			"\nfile:10: error: Failure in TEST(group, test)"
 			"\nfile:2: error:\n\tmessage\n\n";
+	STRCMP_EQUAL(expected, mock->getOutput().asCharString());
+}
+
+TEST(TestOutput, PrintInVisualStudioFormat)
+{
+	TestOutput::setWorkingEnvironment(TestOutput::vistualStudio);
+	printer->print(*f3);
+	const char* expected =
+			"\nfile(10): error: Failure in TEST(group, test)"
+			"\nfile(2): error:\n\tmessage\n\n";
 	STRCMP_EQUAL(expected, mock->getOutput().asCharString());
 }
 

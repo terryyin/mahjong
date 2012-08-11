@@ -37,8 +37,9 @@
 #define D_TestRegistry_h
 
 #include "SimpleString.h"
+#include "TestFilter.h"
 
-class Utest;
+class UtestShell;
 class TestResult;
 class TestPlugin;
 
@@ -48,12 +49,12 @@ public:
 	TestRegistry();
 	virtual ~TestRegistry();
 
-	virtual void addTest(Utest *test);
+	virtual void addTest(UtestShell *test);
 	virtual void unDoLastAddTest();
 	virtual int countTests();
 	virtual void runAllTests(TestResult& result);
-	virtual void nameFilter(SimpleString);
-	virtual void groupFilter(SimpleString);
+	virtual void nameFilter(const TestFilter& filter);
+	virtual void groupFilter(const TestFilter& filter);
 
 	virtual void installPlugin(TestPlugin* plugin);
 	virtual void resetPlugins();
@@ -61,26 +62,31 @@ public:
 	virtual TestPlugin* getPluginByName(const SimpleString& name);
 	virtual void removePluginByName(const SimpleString& name);
 
-	SimpleString getGroupFilter();
-	SimpleString getNameFilter();
+	TestFilter getGroupFilter();
+	TestFilter getNameFilter();
 
-	virtual Utest* getFirstTest();
-	virtual Utest* getLastTest();
-	virtual Utest* getTestWithNext(Utest* test);
+	virtual UtestShell* getFirstTest();
+	virtual UtestShell* getLastTest();
+	virtual UtestShell* getTestWithNext(UtestShell* test);
+
+	virtual UtestShell* findTestWithName(const SimpleString& name);
+	virtual UtestShell* findTestWithGroup(const SimpleString& name);
 
 	static TestRegistry* getCurrentRegistry();
 	virtual void setCurrentRegistry(TestRegistry* registry);
-	void cleanup();
+
+	virtual void setRunTestsInSeperateProcess();
 private:
 
-	bool testShouldRun(Utest* test, TestResult& result);
-	bool endOfGroup(Utest* test);
+	bool testShouldRun(UtestShell* test, TestResult& result);
+	bool endOfGroup(UtestShell* test);
 
-	Utest * tests_;
-	SimpleString* nameFilter_;
-	SimpleString* groupFilter_;
+	UtestShell * tests_;
+	TestFilter nameFilter_;
+	TestFilter groupFilter_;
 	TestPlugin* firstPlugin_;
 	static TestRegistry* currentRegistry_;
+	bool runInSeperateProcess_;
 
 };
 

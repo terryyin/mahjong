@@ -33,7 +33,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/MemoryLeakDetector.h"
-#include "CppUTest/MemoryLeakAllocator.h"
+#include "CppUTest/TestMemoryAllocator.h"
 #include "CppUTest/PlatformSpecificFunctions.h"
 
 extern "C"
@@ -73,17 +73,39 @@ void FAIL_C_LOCATION(const char* fileName, int lineNumber)
 
 void CHECK_C_LOCATION(int condition, const char* conditionString, const char* fileName, int lineNumber)
 {
-	CHECK_LOCATION(((condition) == 0 ? false : true), conditionString, fileName, lineNumber);
+	CHECK_LOCATION_TRUE(((condition) == 0 ? false : true), "CHECK_C", conditionString, fileName, lineNumber);
+}
+
+enum { NO_COUNTDOWN = -1, OUT_OF_MEMORRY = 0 };
+static int malloc_out_of_memory_counter = NO_COUNTDOWN;
+static int malloc_count = 0;
+
+void cpputest_malloc_count_reset(void)
+{
+	malloc_count = 0;
+}
+
+int cpputest_malloc_get_count()
+{
+	return malloc_count;
 }
 
 void cpputest_malloc_set_out_of_memory()
 {
-	MemoryLeakAllocator::setCurrentMallocAllocator(NullUnknownAllocator::defaultAllocator());
+	setCurrentMallocAllocator(NullUnknownAllocator::defaultAllocator());
 }
 
 void cpputest_malloc_set_not_out_of_memory()
 {
-	MemoryLeakAllocator::setCurrentMallocAllocatorToDefault();
+	malloc_out_of_memory_counter = NO_COUNTDOWN;
+	setCurrentMallocAllocatorToDefault();
+}
+
+void cpputest_malloc_set_out_of_memory_countdown(int count)
+{
+	malloc_out_of_memory_counter = count;
+	if (malloc_out_of_memory_counter == OUT_OF_MEMORRY)
+		cpputest_malloc_set_out_of_memory();
 }
 
 void* cpputest_malloc(size_t size)
@@ -106,9 +128,25 @@ void cpputest_free(void* buffer)
 	cpputest_free_location(buffer, "<unknown>", 0);
 }
 
+static void countdown()
+{
+	if (malloc_out_of_memory_counter <= NO_COUNTDOWN)
+		return;
+
+	if (malloc_out_of_memory_counter == OUT_OF_MEMORRY)
+		return;
+
+	malloc_out_of_memory_counter--;
+
+	if (malloc_out_of_memory_counter == OUT_OF_MEMORRY)
+		cpputest_malloc_set_out_of_memory();
+}
+
 void* cpputest_malloc_location(size_t size, const char* file, int line)
 {
-	return MemoryLeakWarningPlugin::getGlobalDetector()->allocMemory(MemoryLeakAllocator::getCurrentMallocAllocator(), size, file, line);
+	countdown();
+	malloc_count++;
+	return MemoryLeakWarningPlugin::getGlobalDetector()->allocMemory(getCurrentMallocAllocator(), size, file, line, true);
 }
 
 void* cpputest_calloc_location(size_t num, size_t size, const char* file, int line)
@@ -120,12 +158,13 @@ void* cpputest_calloc_location(size_t num, size_t size, const char* file, int li
 
 void* cpputest_realloc_location(void* memory, size_t size, const char* file, int line)
 {
-	return MemoryLeakWarningPlugin::getGlobalDetector()->reallocMemory(MemoryLeakAllocator::getCurrentMallocAllocator(), (char*) memory, size, file, line);
+	return MemoryLeakWarningPlugin::getGlobalDetector()->reallocMemory(getCurrentMallocAllocator(), (char*) memory, size, file, line, true);
 }
 
 void cpputest_free_location(void* buffer, const char* file, int line)
 {
-	MemoryLeakWarningPlugin::getGlobalDetector()->deallocMemory(MemoryLeakAllocator::getCurrentMallocAllocator(), (char*) buffer, file, line);
+	MemoryLeakWarningPlugin::getGlobalDetector()->invalidateMemory((char*) buffer);
+	MemoryLeakWarningPlugin::getGlobalDetector()->deallocMemory(getCurrentMallocAllocator(), (char*) buffer, file, line, true);
 }
 
 }

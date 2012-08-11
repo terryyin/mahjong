@@ -39,7 +39,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-class Utest;
+class UtestShell;
 class TestFailure;
 class TestResult;
 
@@ -51,13 +51,14 @@ public:
 
 	virtual void printTestsStarted();
 	virtual void printTestsEnded(const TestResult& result);
-	virtual void printCurrentTestStarted(const Utest& test);
+	virtual void printCurrentTestStarted(const UtestShell& test);
 	virtual void printCurrentTestEnded(const TestResult& res);
-	virtual void printCurrentGroupStarted(const Utest& test);
+	virtual void printCurrentGroupStarted(const UtestShell& test);
 	virtual void printCurrentGroupEnded(const TestResult& res);
 
 	virtual void verbose();
-	virtual void print(const char*)=0;
+	virtual void printBuffer(const char*)=0;
+	virtual void print(const char*);
 	virtual void print(long);
 	virtual void printDouble(double);
 	virtual void printHex(long);
@@ -67,14 +68,22 @@ public:
 
 	virtual void flush();
 
-private:
+	enum WorkingEnvironment {vistualStudio, eclipse, detectEnvironment};
+
+	static void setWorkingEnvironment(WorkingEnvironment workEnvironment);
+	static WorkingEnvironment getWorkingEnvironment();
+
+protected:
+
+	virtual void printEclipseErrorInFileOnLine(SimpleString file, int lineNumber);
+	virtual void printVistualStudioErrorInFileOnLine(SimpleString file, int lineNumber);
 
 	virtual void printProgressIndicator();
 	void printFileAndLineForTestAndFailure(const TestFailure& failure);
 	void printFileAndLineForFailure(const TestFailure& failure);
 	void printFailureInTest(SimpleString testName);
 	void printFailureMessage(SimpleString reason);
-	void printEclipseErrorInFileOnLine(SimpleString testFile, int lineNumber);
+	void printErrorInFileOnLineFormattedForWorkingEnvironment(SimpleString testFile, int lineNumber);
 
 	TestOutput(const TestOutput&);
 	TestOutput& operator=(const TestOutput&);
@@ -82,6 +91,8 @@ private:
 	int dotCount_;
 	bool verbose_;
 	const char* progressIndication_;
+
+	static WorkingEnvironment workingEnvironment_;
 };
 
 TestOutput& operator<<(TestOutput&, const char*);
@@ -107,7 +118,7 @@ public:
 	}
 	;
 
-	virtual void print(const char* s);
+	virtual void printBuffer(const char* s);
 	virtual void flush();
 
 private:
@@ -136,7 +147,7 @@ public:
 	}
 	;
 
-	void print(const char* s)
+	void printBuffer(const char* s)
 	{
 		output += s;
 	}

@@ -41,54 +41,65 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
+#include <unistd.h>
+#ifndef __MINGW32__
+#include <sys/wait.h>
+#endif
 
 #include "CppUTest/PlatformSpecificFunctions.h"
 
 static jmp_buf test_exit_jmp_buf[10];
 static int jmp_buf_index = 0;
 
-bool Utest::executePlatformSpecificSetup()
+int PlatformSpecificSetJmp(void (*function) (void* data), void* data)
 {
-   if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
-      jmp_buf_index++;
-      setup();
-      jmp_buf_index--;
-      return true;
+	if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
+	    jmp_buf_index++;
+		function(data);
+	    jmp_buf_index--;
+		return 1;
+	}
+	return 0;
+}
+
+void PlatformSpecificLongJmp()
+{
+	jmp_buf_index--;
+	longjmp(test_exit_jmp_buf[jmp_buf_index], 1);
+}
+
+void PlatformSpecificRestoreJumpBuffer()
+{
+	jmp_buf_index--;
+}
+
+void PlatformSpecificRunTestInASeperateProcess(UtestShell* shell, TestPlugin* plugin, TestResult* result)
+{
+#ifdef __MINGW32__
+   printf("-p doesn't work on MinGW as it is lacking fork. Running inside the process\b");
+   shell->runOneTest(plugin, *result);
+#else
+
+   int info;
+   pid_t pid = fork();
+
+   if (pid) {
+	   wait(&info);
+	   if (WIFEXITED(info) && WEXITSTATUS(info) > result->getFailureCount())
+		   result->addFailure(TestFailure(shell, "failed in seperate process"));
+	   else if (!WIFEXITED(info))
+		   result->addFailure(TestFailure(shell, "failed in seperate process"));
    }
-   return false;
+   else {
+	   shell->runOneTest(plugin, *result);
+	   exit(result->getFailureCount() );
+	}
+#endif
 }
 
-void Utest::executePlatformSpecificTestBody()
+TestOutput::WorkingEnvironment PlatformSpecificGetWorkingEnvironment()
 {
-   if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
-      jmp_buf_index++;
-      testBody();
-      jmp_buf_index--;
-   }
-}
-
-void Utest::executePlatformSpecificTeardown()
-{
-   if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
-      jmp_buf_index++;
-      teardown();
-      jmp_buf_index--;
-   }
-}
-
-void Utest::executePlatformSpecificRunOneTest(TestPlugin* plugin, TestResult& result)
-{
-    if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
-       jmp_buf_index++;
-       runOneTest(plugin, result);
-       jmp_buf_index--;
-    }
-}
-
-void Utest::executePlatformSpecificExitCurrentTest()
-{
-   jmp_buf_index--;
-   longjmp(test_exit_jmp_buf[jmp_buf_index], 1);
+	return TestOutput::eclipse;
 }
 
 ///////////// Time in millis
@@ -172,7 +183,7 @@ char* PlatformSpecificStrStr(const char* s1, const char* s2)
    return (char*) strstr(s1, s2);
 }
 
-int PlatformSpecificVSNprintf(char *str, unsigned int size, const char* format, va_list args)
+int PlatformSpecificVSNprintf(char *str, size_t size, const char* format, va_list args)
 {
    return vsnprintf( str, size, format, args);
 }

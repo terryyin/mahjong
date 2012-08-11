@@ -74,7 +74,7 @@ extern void FAIL_C_LOCATION(const char* fileName, int lineNumber);
 extern void CHECK_C_LOCATION(int condition, const char* conditionString,
 		const char* fileName, int lineNumber);
 
-#include <stddef.h>
+#include "StandardCLibrary.h"
 
 extern void* cpputest_malloc(size_t size);
 extern void* cpputest_calloc(size_t num, size_t size);
@@ -88,8 +88,11 @@ extern void* cpputest_realloc_location(void* memory, size_t size,
 		const char* file, int line);
 extern void cpputest_free_location(void* buffer, const char* file, int line);
 
-void cpputest_malloc_set_out_of_memory();
-void cpputest_malloc_set_not_out_of_memory();
+void cpputest_malloc_set_out_of_memory(void);
+void cpputest_malloc_set_not_out_of_memory(void);
+void cpputest_malloc_set_out_of_memory_countdown(int);
+void cpputest_malloc_count_reset(void);
+int cpputest_malloc_get_count(void);
 
 /*
  * Small additional macro for unused arguments. This is common when stubbing, but in C you cannot remove the

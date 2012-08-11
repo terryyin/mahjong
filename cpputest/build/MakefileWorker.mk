@@ -27,6 +27,10 @@
 # and where to put and name outputs
 # See below to determine defaults
 #   COMPONENT_NAME - the name of the thing being built
+#   TEST_TARGET - name the test executable. By default it is 
+#			$(COMPONENT_NAME)_tests
+#		Helpful if you want 1 > make files in the same directory with different
+#		executables as output.
 #   CPPUTEST_HOME - where CppUTest home dir found
 #   CPPUTEST_OBJS_DIR - a directory where o and d files go
 #   CPPUTEST_LIB_DIR - a directory where libs go
@@ -36,6 +40,8 @@
 #		of the test harness
 #   CPPUTEST_USE_GCOV - Turn on coverage analysis
 #		Clean then build with this flag set to Y, then 'make gcov'
+#   CPPUTEST_USE_REAL_GTEST - Expect to link to gtest too. This enables the ability to
+#       run Google Test tests as CppUTest tests using the GTestConvertor.
 #   CPPUTEST_MAPFILE - generate a map file
 #   CPPUTEST_WARNINGFLAGS - overly picky by default
 #	OTHER_MAKEFILE_TO_INCLUDE - a hook to use this makefile to make 
@@ -49,11 +55,66 @@
 #
 #  Other flags users can initialize to sneak in their settings
 #	CPPUTEST_CXXFLAGS - flags for the C++ compiler
-#	CPPUTEST_CPPFLAGS - flags for the C++ AND C compiler
+#	CPPUTEST_CPPFLAGS - flags for the C++ AND C preprocessor
 #	CPPUTEST_CFLAGS - C complier
 #	CPPUTEST_LDFLAGS - Linker flags
 #----------
 
+# Some behavior is weird on some platforms. Need to discover the platform.
+UNAME_OUTPUT = "$(shell uname -a)"
+CC_VERSION_OUTPUT ="$(shell $(CXX) -v 2>&1)"
+MACOSX_STR = Darwin
+MINGW_STR = MINGW
+CYGWIN_STR = CYGWIN
+LINUX_STR = Linux
+UNKNWOWN_OS_STR = Unknown
+CLANG_STR = clang 
+
+UNAME_OS = $(UNKNWOWN_OS_STR)
+
+ifeq ($(findstring $(MINGW_STR),$(UNAME_OUTPUT)),$(MINGW_STR))
+	UNAME_OS = $(MINGW_STR)
+endif
+
+ifeq ($(findstring $(CYGWIN_STR),$(UNAME_OUTPUT)),$(CYGWIN_STR))
+	UNAME_OS = $(CYGWIN_STR)
+endif
+
+ifeq ($(findstring $(LINUX_STR),$(UNAME_OUTPUT)),$(LINUX_STR))
+	UNAME_OS = $(LINUX_STR)
+endif
+
+ifeq ($(findstring $(MACOSX_STR),$(UNAME_OUTPUT)),$(MACOSX_STR))
+	UNAME_OS = $(MACOSX_STR)
+	#lion has a problem with the 'v' part of -a
+	UNAME_OUTPUT = "$(shell uname -pmnrs)"
+endif
+
+ifeq ($(findstring $(CLANG_STR),$(CC_VERSION_OUTPUT)),$(CLANG_STR))
+	COMPILER_NAME = $(CLANG_STR)
+endif
+
+#Kludge for mingw, it does not have cc.exe, but gcc.exe will do
+ifeq ($(UNAME_OS),$(MINGW_STR))
+	CC := gcc
+endif
+
+#And another kludge. Exception handling in gcc 4.6.2 is broken when linking the
+# Standard C++ library as a shared library. Unbelievable.
+ifeq ($(UNAME_OS),$(MINGW_STR))
+  CPPUTEST_LDFLAGS += -static
+endif
+ifeq ($(UNAME_OS),$(CYGWIN_STR))
+  CPPUTEST_LDFLAGS += -static
+endif
+  
+
+#Kludge for MacOsX gcc compiler on Darwin9 who can't handle pendantic
+ifeq ($(UNAME_OS),$(MACOSX_STR))
+ifeq ($(findstring Version 9,$(UNAME_OUTPUT)),Version 9)
+	CPPUTEST_PEDANTIC_ERRORS = N
+endif
+endif
 
 ifndef COMPONENT_NAME
     COMPONENT_NAME = name_this_in_the_makefile
@@ -69,19 +130,53 @@ ifndef CPPUTEST_USE_MEM_LEAK_DETECTION
 	CPPUTEST_USE_MEM_LEAK_DETECTION = Y
 endif
 
+# Use the standard C library
+ifndef CPPUTEST_USE_STD_C_LIB
+	CPPUTEST_USE_STD_C_LIB = Y
+endif
+
 # Use the standard C++ library
 ifndef CPPUTEST_USE_STD_CPP_LIB
 	CPPUTEST_USE_STD_CPP_LIB = Y
 endif
+
+# Use the real gtest or use the fake simulation
+ifdef CPPUTEST_USE_REAL_GTEST
+	CPPUTEST_USE_REAL_GTEST = Y
+else
+	CPPUTEST_USE_REAL_GTEST = N
+endif
+
+# Use gmock
+ifdef CPPUTEST_USE_REAL_GMOCK
+	CPPUTEST_USE_REAL_GMOCK = Y
+else
+	CPPUTEST_USE_REAL_GMOCK = N
+endif
+
 
 # Use gcov, off by default
 ifndef CPPUTEST_USE_GCOV
 	CPPUTEST_USE_GCOV = N
 endif
 
+ifndef CPPUTEST_PEDANTIC_ERRORS
+	CPPUTEST_PEDANTIC_ERRORS = Y
+endif
+
 # Default warnings
 ifndef CPPUTEST_WARNINGFLAGS
-	CPPUTEST_WARNINGFLAGS = -pedantic-errors -Wall -Wextra -Werror -Wshadow -Wswitch-default -Wswitch-enum -Wconversion
+ifeq ($(CPPUTEST_USE_REAL_GTEST), N)
+	CPPUTEST_WARNINGFLAGS =  -Wall -Wextra -Werror -Wshadow -Wswitch-default -Wswitch-enum -Wconversion
+ifeq ($(CPPUTEST_PEDANTIC_ERRORS), Y)
+	CPPUTEST_WARNINGFLAGS += -pedantic-errors
+endif 
+ifeq ($(UNAME_OS),$(LINUX_STR))
+	CPPUTEST_WARNINGFLAGS += -Wsign-conversion
+endif
+	CPPUTEST_CXX_WARNINGFLAGS = -Woverloaded-virtual
+	CPPUTEST_C_WARNINGFLAGS = -Wstrict-prototypes
+endif
 endif
 
 # Default dir for temporary files (d, o)
@@ -116,6 +211,17 @@ endif
 # --------------------------------------
 # derived flags in the following area
 # --------------------------------------
+
+# Without the C library, we'll need to disable the C++ library and ... 
+ifeq ($(CPPUTEST_USE_STD_C_LIB), N)
+	CPPUTEST_USE_STD_CPP_LIB = N
+	CPPUTEST_USE_MEM_LEAK_DETECTION = N
+	CPPUTEST_CPPFLAGS += -DCPPUTEST_STD_C_LIB_DISABLED
+	CPPUTEST_CPPFLAGS += -nostdinc
+endif
+
+CPPUTEST_CPPFLAGS += -DCPPUTEST_COMPILATION
+
 ifeq ($(CPPUTEST_USE_MEM_LEAK_DETECTION), N)
 	CPPUTEST_CPPFLAGS += -DCPPUTEST_MEM_LEAK_DETECTION_DISABLED
 else
@@ -128,21 +234,54 @@ else
 endif
 
 ifeq ($(CPPUTEST_ENABLE_DEBUG), Y)
-	CPPUTEST_CPPFLAGS += -g
+	CPPUTEST_CXXFLAGS += -g
+	CPPUTEST_CFLAGS += -g
+	CPPUTEST_LDFLAGS += -g
 endif
 
 ifeq ($(CPPUTEST_USE_STD_CPP_LIB), N)
 	CPPUTEST_CPPFLAGS += -DCPPUTEST_STD_CPP_LIB_DISABLED
+ifeq ($(CPPUTEST_USE_STD_C_LIB), Y)
 	CPPUTEST_CXXFLAGS += -nostdinc++
+endif
+endif
+
+ifeq ($(CPPUTEST_USE_REAL_GMOCK), Y)
+	ifndef GMOCK_HOME
+$(error CPPUTEST_USE_REAL_GMOCK defined, but GMOCK_HOME not, so can't use real gmock! Please define GMOCK_HOME to the gmock location)
+	endif
+	GTEST_HOME = $(GMOCK_HOME)/gtest
+	CPPUTEST_USE_REAL_GTEST = Y
+	CPPUTEST_CPPFLAGS += -I$(GMOCK_HOME)/include
+	GMOCK_LIBRARY = $(GMOCK_HOME)/lib/.libs/libgmock.a
+	LD_LIBRARIES += $(GMOCK_LIBRARY)
+	CPPUTEST_CPPFLAGS += -DCPPUTEST_USE_REAL_GMOCK
+else
+	CPPUTEST_CPPFLAGS += -Iinclude/CppUTestExt/CppUTestGMock
+endif
+
+ifeq ($(CPPUTEST_USE_REAL_GTEST), Y)
+	ifndef GTEST_HOME
+$(error CPPUTEST_USE_REAL_GTEST defined, but GTEST_HOME not, so can't use real gtest! Please define GTEST_HOME to the gtest location)
+	endif
+	CPPUTEST_CPPFLAGS += -I$(GTEST_HOME)/include -I$(GTEST_HOME)
+	GTEST_LIBRARY = $(GTEST_HOME)/lib/.libs/libgtest.a
+	LD_LIBRARIES += $(GTEST_LIBRARY)
+	CPPUTEST_CPPFLAGS += -DCPPUTEST_USE_REAL_GTEST
+else
+	CPPUTEST_CPPFLAGS += -Iinclude/CppUTestExt/CppUTestGTest
 endif
 
 ifeq ($(CPPUTEST_USE_GCOV), Y)
-	CPPUTEST_CPPFLAGS += -fprofile-arcs -ftest-coverage
+	CPPUTEST_CXXFLAGS += -fprofile-arcs -ftest-coverage
+	CPPUTEST_CFLAGS += -fprofile-arcs -ftest-coverage
 endif
 
+CPPUTEST_CXXFLAGS += $(CPPUTEST_WARNINGFLAGS) $(CPPUTEST_CXX_WARNINGFLAGS)
 CPPUTEST_CPPFLAGS += $(CPPUTEST_WARNINGFLAGS)
 CPPUTEST_CXXFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_NEW_MACRO_FILE)
-CPPUTEST_CFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_MALLOC_MACRO_FILE)
+CPPUTEST_CPPFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_MALLOC_MACRO_FILE)
+CPPUTEST_CFLAGS += $(CPPUTEST_C_WARNINGFLAGS) 
 
 TARGET_MAP = $(COMPONENT_NAME).map.txt
 ifeq ($(CPPUTEST_MAP_FILE), Y)
@@ -156,13 +295,14 @@ ifeq ($(CPPUTEST_USE_EXTENSIONS), Y)
 CPPUTEST_LIB += $(CPPUTEST_HOME)/lib/libCppUTestExt.a
 endif
 
-LD_LIBRARIES += -lstdc++ -lgcov
+LD_LIBRARIES += -lstdc++
 
 TARGET_LIB = \
     $(CPPUTEST_LIB_DIR)/lib$(COMPONENT_NAME).a
     
-TEST_TARGET = \
-    $(COMPONENT_NAME)_tests
+ifndef TEST_TARGET
+TEST_TARGET = $(COMPONENT_NAME)_tests
+endif
 
 #Helper Functions
 get_src_from_dir  = $(wildcard $1/*.cpp) $(wildcard $1/*.c)
@@ -221,19 +361,27 @@ STUFF_TO_CLEAN += \
 	$(GCOV_GCNO_FILES)\
 	$(TEST_OUTPUT)
 
-
-CPPUTEST_CPPFLAGS +=  $(INCLUDES) 
-
 #The gcda files for gcov need to be deleted before each run
 #To avoid annoying messages.
 GCOV_CLEAN = $(SILENCE)rm -f $(GCOV_GCDA_FILES) $(GCOV_OUTPUT) $(GCOV_REPORT) $(GCOV_ERROR)
 RUN_TEST_TARGET = $(SILENCE)  $(GCOV_CLEAN) ; echo "Running $(TEST_TARGET)"; ./$(TEST_TARGET) $(CPPUTEST_EXE_FLAGS)
+
+ifeq ($(CPPUTEST_USE_GCOV), Y)
+
+	ifeq ($(COMPILER_NAME),$(CLANG_STR))
+		LD_LIBRARIES += --coverage
+	else
+		LD_LIBRARIES += -lgcov
+	endif
+endif
+
 
 INCLUDES_DIRS_EXPANDED = $(call get_dirs_from_dirspec, $(INCLUDE_DIRS))
 INCLUDES += $(foreach dir, $(INCLUDES_DIRS_EXPANDED), -I$(dir))
 MOCK_DIRS_EXPANDED = $(call get_dirs_from_dirspec, $(MOCKS_SRC_DIRS))
 INCLUDES += $(foreach dir, $(MOCK_DIRS_EXPANDED), -I$(dir))
 
+CPPUTEST_CPPFLAGS +=  $(INCLUDES) 
 
 DEP_FILES = $(call src_to_d, $(ALL_SRC))
 STUFF_TO_CLEAN += $(DEP_FILES) $(PRODUCTION_CODE_START) $(PRODUCTION_CODE_END)
@@ -244,6 +392,11 @@ CFLAGS = $(CPPUTEST_CFLAGS) $(CPPUTEST_ADDITIONAL_CFLAGS)
 CPPFLAGS = $(CPPUTEST_CPPFLAGS) $(CPPUTEST_ADDITIONAL_CPPFLAGS)
 CXXFLAGS = $(CPPUTEST_CXXFLAGS) $(CPPUTEST_ADDITIONAL_CXXFLAGS)
 LDFLAGS = $(CPPUTEST_LDFLAGS) $(CPPUTEST_ADDITIONAL_LDFLAGS)
+
+DEP_FLAGS=-MMD -MP
+
+# Some macros for programs to be overridden. For some reason, these are not in Make defaults
+RANLIB = ranlib
 
 # Targets
 
@@ -261,6 +414,7 @@ all_no_tests: $(TEST_TARGET)
 .PHONY: flags
 flags: 
 	@echo
+	@echo "OS ${UNAME_OS}"
 	@echo "Compile C and C++ source with CPPFLAGS:"
 	@$(call debug_print_list,$(CPPFLAGS))
 	@echo "Compile C++ source with CXXFLAGS:"
@@ -273,17 +427,16 @@ flags:
 	@$(call debug_print_list,$(LD_LIBRARIES))
 	@echo "Create libraries with ARFLAGS:"
 	@$(call debug_print_list,$(ARFLAGS))
-	
-	
+
 $(TEST_TARGET): $(TEST_OBJS) $(MOCKS_OBJS)  $(PRODUCTION_CODE_START) $(TARGET_LIB) $(USER_LIBS) $(PRODUCTION_CODE_END) $(CPPUTEST_LIB) $(STDLIB_CODE_START) 
-	$(SILENCE)echo Linking $@
-	$(SILENCE)$(LINK.o) -o $@ $^ $(LD_LIBRARIES)
+	@echo Linking $@
+	$(LINK.o) -o $@ $^ $(LD_LIBRARIES)
 
 $(TARGET_LIB): $(OBJ)
-	$(SILENCE)echo Building archive $@
-	$(SILENCE)mkdir -p lib
+	@echo Building archive $@
+	$(SILENCE)mkdir -p $(dir $@)
 	$(SILENCE)$(AR) $(ARFLAGS) $@ $^
-	$(SILENCE)ranlib $@
+	$(SILENCE)$(RANLIB) $@
 
 test: $(TEST_TARGET)
 	$(RUN_TEST_TARGET) | tee $(TEST_OUTPUT)
@@ -294,12 +447,12 @@ vtest: $(TEST_TARGET)
 $(CPPUTEST_OBJS_DIR)/%.o: %.cpp
 	@echo compiling $(notdir $<)
 	$(SILENCE)mkdir -p $(dir $@)
-	$(SILENCE)$(COMPILE.cpp) -MMD -MP $(OUTPUT_OPTION) $<
+	$(SILENCE)$(COMPILE.cpp) $(DEP_FLAGS) $(OUTPUT_OPTION) $<
 
 $(CPPUTEST_OBJS_DIR)/%.o: %.c
 	@echo compiling $(notdir $<)
 	$(SILENCE)mkdir -p $(dir $@)
-	$(SILENCE)$(COMPILE.c) -MMD -MP  $(OUTPUT_OPTION) $<
+	$(SILENCE)$(COMPILE.c) $(DEP_FLAGS)  $(OUTPUT_OPTION) $<
 
 ifneq "$(MAKECMDGOALS)" "clean"
 -include $(DEP_FILES)
@@ -307,7 +460,7 @@ endif
 
 .PHONY: clean
 clean:
-	$(SILENCE)echo Making clean
+	@echo Making clean
 	$(SILENCE)$(RM) $(STUFF_TO_CLEAN)
 	$(SILENCE)rm -rf gcov $(CPPUTEST_OBJS_DIR)
 	$(SILENCE)find . -name "*.gcno" | xargs rm -f
@@ -337,12 +490,13 @@ endif
 	$(SILENCE)mkdir -p gcov
 	$(SILENCE)mv *.gcov gcov
 	$(SILENCE)mv gcov_* gcov
-	$(SILENCE)echo "See gcov directory for details"
+	@echo "See gcov directory for details"
  
 .PHONEY: format
 format: 
 	$(CPPUTEST_HOME)/scripts/reformat.sh $(PROJECT_HOME_DIR)
 	
+.PHONEY: debug
 debug:
 	@echo
 	@echo "Target Source files:"
@@ -364,6 +518,4 @@ debug:
 	@echo Includes:
 	@$(call debug_print_list,$(INCLUDES))
 
-ifneq "$(OTHER_MAKEFILE_TO_INCLUDE)" ""
 -include $(OTHER_MAKEFILE_TO_INCLUDE)
-endif

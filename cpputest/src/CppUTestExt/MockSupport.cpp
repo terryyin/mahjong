@@ -34,6 +34,8 @@
 #define MOCK_SUPPORT_SCOPE_PREFIX "!!!$$$MockingSupportScope$$$!!!"
 
 static MockSupport global_mock;
+int MockSupport::callOrder_ = 0;
+int MockSupport::expectedCallOrder_ = 0;
 
 MockSupport& mock(const SimpleString& mockName)
 {
@@ -43,7 +45,7 @@ MockSupport& mock(const SimpleString& mockName)
 }
 
 MockSupport::MockSupport()
-	: reporter_(&defaultReporter_), ignoreOtherCalls_(false), enabled_(true), lastActualFunctionCall_(NULL), tracing_(false)
+	: strictOrdering_(false), reporter_(&defaultReporter_), ignoreOtherCalls_(false), enabled_(true), lastActualFunctionCall_(NULL), tracing_(false)
 {
 }
 
@@ -102,6 +104,9 @@ void MockSupport::clear()
 	compositeCalls_.clear();
 	ignoreOtherCalls_ = false;
 	enabled_ = true;
+	callOrder_ = 0;
+	expectedCallOrder_ = 0;
+	strictOrdering_ = false;
 
 	for (MockNamedValueListNode* p = data_.begin(); p; p = p->next()) {
 		MockSupport* support = getMockSupport(p);
@@ -113,6 +118,11 @@ void MockSupport::clear()
 	data_.clear();
 }
 
+void MockSupport::strictOrder()
+{
+	strictOrdering_ = true;
+}
+
 MockFunctionCall& MockSupport::expectOneCall(const SimpleString& functionName)
 {
 	if (!enabled_) return MockIgnoredCall::instance();
@@ -120,6 +130,8 @@ MockFunctionCall& MockSupport::expectOneCall(const SimpleString& functionName)
 	MockExpectedFunctionCall* call = new MockExpectedFunctionCall;
 	call->setComparatorRepository(&comparatorRepository_);
 	call->withName(functionName);
+	if (strictOrdering_)
+		call->withCallOrder(++expectedCallOrder_);
 	expectations_.addExpectedCall(call);
 	return *call;
 }
@@ -136,18 +148,21 @@ MockFunctionCall& MockSupport::expectNCalls(int amount, const SimpleString& func
 
 MockActualFunctionCall* MockSupport::createActualFunctionCall()
 {
-	if (lastActualFunctionCall_) delete lastActualFunctionCall_;
-
-	lastActualFunctionCall_ = new MockActualFunctionCall(reporter_, expectations_);
+	lastActualFunctionCall_ = new MockActualFunctionCall(++callOrder_, reporter_, expectations_);
 	return lastActualFunctionCall_;
 }
 
 MockFunctionCall& MockSupport::actualCall(const SimpleString& functionName)
 {
+	if (lastActualFunctionCall_) {
+		lastActualFunctionCall_->checkExpectations();
+		delete lastActualFunctionCall_;
+		lastActualFunctionCall_ = NULL;
+	}
+
 	if (!enabled_) return MockIgnoredCall::instance();
 	if (tracing_) return MockFunctionCallTrace::instance().withName(functionName);
 
-	if (lastActualFunctionCall_) lastActualFunctionCall_->checkExpectations();
 
 	if (!expectations_.hasExpectationWithName(functionName) && ignoreOtherCalls_) {
 		return MockIgnoredCall::instance();
@@ -203,7 +218,7 @@ bool MockSupport::expectedCallsLeft()
 	for (MockNamedValueListNode* p = data_.begin(); p; p = p->next())
 		if (getMockSupport(p)) callsLeft += getMockSupport(p)->expectedCallsLeft();
 
-	return callsLeft;
+	return callsLeft != 0;
 }
 
 bool MockSupport::wasLastCallFulfilled()
@@ -218,7 +233,7 @@ bool MockSupport::wasLastCallFulfilled()
 	return true;
 }
 
-void MockSupport::failTestWithForUnexpectedCalls()
+void MockSupport::failTestWithUnexpectedCalls()
 {
     MockExpectedFunctionsList expectationsList;
     expectationsList.addExpectations(expectations_);
@@ -229,7 +244,27 @@ void MockSupport::failTestWithForUnexpectedCalls()
 
     MockExpectedCallsDidntHappenFailure failure(reporter_->getTestToFail(), expectationsList);
     clear();
-    reporter_->failTest(failure);
+    failTest(failure);
+}
+
+void MockSupport::failTestWithOutOfOrderCalls()
+{
+    MockExpectedFunctionsList expectationsList;
+    expectationsList.addExpectations(expectations_);
+
+    for(MockNamedValueListNode *p = data_.begin();p;p = p->next())
+		if(getMockSupport(p))
+			expectationsList.addExpectations(getMockSupport(p)->expectations_);
+
+    MockCallOrderFailure failure(reporter_->getTestToFail(), expectationsList);
+    clear();
+    failTest(failure);
+}
+
+void MockSupport::failTest(MockFailure& failure)
+{
+	if (reporter_->getAmountOfTestFailures() == 0)
+		reporter_->failTest(failure);
 }
 
 void MockSupport::checkExpectationsOfLastCall()
@@ -244,10 +279,13 @@ void MockSupport::checkExpectationsOfLastCall()
 
 void MockSupport::checkExpectations()
 {
-	if (!wasLastCallFulfilled())
-		checkExpectationsOfLastCall();
-	else if (expectedCallsLeft())
-		failTestWithForUnexpectedCalls();
+	checkExpectationsOfLastCall();
+
+	if (wasLastCallFulfilled() && expectedCallsLeft())
+		failTestWithUnexpectedCalls();
+
+	if (expectations_.hasCallsOutOfOrder())
+		failTestWithOutOfOrderCalls();
 }
 
 bool MockSupport::hasData(const SimpleString& name)
@@ -255,40 +293,43 @@ bool MockSupport::hasData(const SimpleString& name)
 	return data_.getValueByName(name) != NULL;
 }
 
-MockNamedValue* MockSupport::createAndStoreData(const SimpleString& name)
+MockNamedValue* MockSupport::retrieveDataFromStore(const SimpleString& name)
 {
-	MockNamedValue* newData = new MockNamedValue(name);
-	data_.add(newData);
+	MockNamedValue* newData = data_.getValueByName(name);
+	if (newData == NULL) {
+		newData = new MockNamedValue(name);
+		data_.add(newData);
+	}
 	return newData;
 }
 
 void MockSupport::setData(const SimpleString& name, int value)
 {
-	MockNamedValue* newData = createAndStoreData(name);
+	MockNamedValue* newData = retrieveDataFromStore(name);
 	newData->setValue(value);
 }
 
 void MockSupport::setData(const SimpleString& name, const char* value)
 {
-	MockNamedValue* newData = createAndStoreData(name);
+	MockNamedValue* newData = retrieveDataFromStore(name);
 	newData->setValue(value);
 }
 
 void MockSupport::setData(const SimpleString& name, double value)
 {
-	MockNamedValue* newData = createAndStoreData(name);
+	MockNamedValue* newData = retrieveDataFromStore(name);
 	newData->setValue(value);
 }
 
 void MockSupport::setData(const SimpleString& name, void* value)
 {
-	MockNamedValue* newData = createAndStoreData(name);
+	MockNamedValue* newData = retrieveDataFromStore(name);
 	newData->setValue(value);
 }
 
 void MockSupport::setDataObject(const SimpleString& name, const SimpleString& type, void* value)
 {
-	MockNamedValue* newData = createAndStoreData(name);
+	MockNamedValue* newData = retrieveDataFromStore(name);
 	newData->setObjectPointer(type, value);
 }
 

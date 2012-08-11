@@ -98,7 +98,7 @@ void JUnitTestOutput::printTestsStarted()
 {
 }
 
-void JUnitTestOutput::printCurrentGroupStarted(const Utest& /*test*/)
+void JUnitTestOutput::printCurrentGroupStarted(const UtestShell& /*test*/)
 {
 }
 
@@ -119,7 +119,7 @@ void JUnitTestOutput::printCurrentGroupEnded(const TestResult& result)
 	resetTestGroupResult();
 }
 
-void JUnitTestOutput::printCurrentTestStarted(const Utest& test)
+void JUnitTestOutput::printCurrentTestStarted(const UtestShell& test)
 {
 	impl_->results_.testCount_++;
 	impl_->results_.group_ = test.getGroup();
@@ -136,10 +136,11 @@ void JUnitTestOutput::printCurrentTestStarted(const Utest& test)
 	impl_->results_.tail_->name_ = test.getName();
 }
 
-static SimpleString createFileName(const SimpleString& group)
+SimpleString JUnitTestOutput::createFileName(const SimpleString& group)
 {
 	SimpleString fileName = "cpputest_";
 	fileName += group;
+	fileName.replace('/', '_');
 	fileName += ".xml";
 	return fileName;
 }
@@ -221,6 +222,10 @@ void JUnitTestOutput::writeTestGroupToFile()
 }
 
 void JUnitTestOutput::verbose()
+{
+}
+
+void JUnitTestOutput::printBuffer(const char*)
 {
 }
 

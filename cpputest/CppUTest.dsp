@@ -73,6 +73,11 @@ BSC32=bscmake.exe
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo /out:"lib\CppUTest.lib"
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PreLink_Cmds=del lib\vc6\CppUTest.lib	del lib\CppUTest.lib
+PostBuild_Cmds=copy lib\CppUTest.lib lib\vc6\CppUTest.lib	copy Debug\vc60.pdb lib\vc6\vc60.pdb
+# End Special Build Tool
 
 !ENDIF 
 
@@ -97,10 +102,6 @@ SOURCE=.\src\CppUTest\JUnitTestOutput.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\CppUTest\MemoryLeakAllocator.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\src\CppUTest\MemoryLeakDetector.cpp
 # End Source File
 # Begin Source File
@@ -117,7 +118,15 @@ SOURCE=.\src\CppUTest\TestFailure.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\CppUTest\TestFilter.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\CppUTest\TestHarness_c.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\CppUTest\TestMemoryAllocator.cpp
 # End Source File
 # Begin Source File
 
@@ -149,23 +158,11 @@ SOURCE=.\src\Platforms\VisualCpp\UtestPlatform.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=.\tests\AllocationInCFile.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\tests\AllocationInCppFile.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\include\CppUTest\CommandLineArguments.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\include\CppUTest\CommandLineTestRunner.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\include\CppUTest\FindLeaksMalloc.h
 # End Source File
 # Begin Source File
 
@@ -177,7 +174,11 @@ SOURCE=.\include\CppUTest\MemoryLeakDetector.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\CppUTest\MemoryLeakWarning.h
+SOURCE=.\include\CppUTest\MemoryLeakDetectorMallocMacros.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\CppUTest\MemoryLeakDetectorNewMacros.h
 # End Source File
 # Begin Source File
 
@@ -185,7 +186,7 @@ SOURCE=.\include\CppUTest\MemoryLeakWarningPlugin.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\Platforms\VisualCpp\Platform.h
+SOURCE=.\include\CppUTest\PlatformSpecificFunctions.h
 # End Source File
 # Begin Source File
 
@@ -193,11 +194,15 @@ SOURCE=.\include\CppUTest\SimpleString.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\CppUTest\Extensions\SimpleStringExtensions.h
+SOURCE=.\include\CppUTest\StandardCLibrary.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\include\CppUTest\TestFailure.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\CppUTest\TestFilter.h
 # End Source File
 # Begin Source File
 
@@ -206,6 +211,10 @@ SOURCE=.\include\CppUTest\TestHarness.h
 # Begin Source File
 
 SOURCE=.\include\CppUTest\TestHarness_c.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\CppUTest\TestMemoryAllocator.h
 # End Source File
 # Begin Source File
 

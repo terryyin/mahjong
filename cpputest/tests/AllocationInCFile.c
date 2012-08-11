@@ -1,12 +1,12 @@
-#include <stdlib.h>
 #include "AllocationInCFile.h"
 #include "CppUTest/MemoryLeakDetectorMallocMacros.h"
+#include "CppUTest/StandardCLibrary.h"
 
 /* This file is for simulating overloads of malloc */
 
 char* mallocAllocation()
 {
-	return malloc(10UL);
+	return (char*) malloc(10UL);
 }
 
 void freeAllocation(void* memory)
