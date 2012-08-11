@@ -1,32 +1,28 @@
-CPPUTEST_ROOT := ../cpputest
-COMPONENT_ROOT := .
-COMPONENT_SRC_DIRS := src include
-COMPONENT_TST_DIRS := tst
-
-COMPONENT_UT := mj_evaluator_ut
-COMPONENT_SRC_LIB := libMahjongEvaluatorUT.a
-COMPONENT_LIB := lib/libMahjongEvaluator.a
-
-LDFLAGS = -lpthread  
-COMPONENT_CFLAGS	:=  -ggdb -Wall -I src -I../include
-COMPONENT_CXXFLAGS	:= $(COMPONENT_CFLAGS)
-ifeq ($(OS),Windows_NT)
-CC = gcc
+CPPUTEST_HOME := ../cpputest
+EVALUATOR = mahjong_evaluator
+CPPUTEST_WARNINGFLAGS =  -Wall -Wextra -Wshadow -Wswitch-default -Wswitch-enum -Wconversion
+#Set this to @ to keep the makefile quiet
+ifndef SILENCE
+	SILENCE = @
 endif
 
-include default.mk
+#--- Inputs ----#
+COMPONENT_NAME = $(EVALUATOR)
 
-#extra targets
-.PHONY: product clean_product
-product: $(COMPONENT_LIB)
+CPPUTEST_USE_EXTENSIONS = Y
+CPP_PLATFORM = Gcc
 
-src_to_o = $(subst .c,.o,$(subst .cpp,.o,$1))
-SRC_OBJS := $(foreach f,$(COMPONENT_ALL_SRC),$(call src_to_o,$f))
+SRC_DIRS = \
+	src
+TEST_SRC_DIRS = \
+	tst
 
-$(COMPONENT_LIB): $(SRC_OBJS)
-	@$(AR) -r $@ $^
+INCLUDE_DIRS =\
+  .\
+  include\
+  ../include\
+  $(SRC_DIRS)\
+  $(CPPUTEST_HOME)/include
+  
+include $(CPPUTEST_HOME)/build/MakefileWorker.mk
 
-clean: clean_product
-
-clean_product:
-	-$(RM) $(COMPONENT_LIB) $(SRC_OBJS)
