@@ -40,8 +40,8 @@ $(EVALUATOR_LIB) :
 .PHONY: product
 product : $(PRODUCT)
 
-$(PRODUCT): $(TARGET_LIB) $(PRDUCT_MAIN_OBJ) $(EVALUATOR_LIB) $(CPPUTEST_LIB)
+$(PRODUCT): $(PRDUCT_MAIN_OBJ) $(TARGET_LIB) $(EVALUATOR_LIB) $(CPPUTEST_LIB)
 	@echo 'Building target: $@'
-	$(CC) -o $@ -g $^ $(LD_LIBRARIES)
+	$(CC) -o $@ -g $^ $(LD_LIBRARIES) -lstdc++
 	@echo 'Running the game. Go to your browser to play at http://localhst:8888'
 	./$(PRODUCT)

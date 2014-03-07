@@ -5,6 +5,7 @@
  *      Author: terry
  */
 #include "CppUTest/TestHarness.h"
+#include "CppUTest/TestHarness_c.h"
 #include "CppUTestExt/MockSupport.h"
 #include "memory.h"
 #include "stdio.h"
